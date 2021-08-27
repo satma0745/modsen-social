@@ -1,6 +1,5 @@
 const express = require('express')
 const responseTime = require('response-time')
-
 const routes = require('./routes')
 
 const app = express()
@@ -19,5 +18,10 @@ app.use(
 
 // configure routes
 app.use('/api/users', routes.user)
+
+// register error handlers
+app.use((_err, _req, res, _next) => {
+  res.sendStatus(500)
+})
 
 module.exports = app
