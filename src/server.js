@@ -1,13 +1,14 @@
 const express = require('express')
-const { configureEnvironment } = require('./environment')
 
-configureEnvironment()
+const { database, environment } = require('./config')
+const routes = require('./routes')
+
+environment.configure()
+database.configure()
 
 const app = express()
-
-app.get('/', (_, res) => {
-  res.sendStatus(200)
-})
+app.use(express.json())
+app.use('/api/users', routes.user)
 
 app.listen(process.env.PORT, () => {
   console.log(`Listening on port ${process.env.PORT}`)
