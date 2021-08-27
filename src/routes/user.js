@@ -1,6 +1,6 @@
 const express = require('express')
 const { User } = require('../schemas')
-const { handleAsync } = require('./utils')
+const { handleAsync, toDto } = require('./utils')
 
 const router = express.Router()
 
@@ -8,7 +8,8 @@ router.get(
   '/',
   handleAsync(async (_, res) => {
     const users = await User.find({})
-    res.status(200).send(users)
+    const dtos = users.map(toDto)
+    res.status(200).send(dtos)
   })
 )
 

@@ -17,6 +17,7 @@
   "rules": {
     "prettier/prettier": "error",
     "no-console": "off",
-    "no-unused-vars": ["error", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }]
+    "no-unused-vars": ["error", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
+    "no-underscore-dangle": "off"
   }
 }
