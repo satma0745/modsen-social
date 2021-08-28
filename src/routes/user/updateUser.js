@@ -11,6 +11,8 @@ const { handleAsync } = require('../utils')
  * /api/users/{id}:
  *   put:
  *     summary: Update specific user.
+ *     tags:
+ *       - Users
  *     parameters:
  *       - in: path
  *         name: id

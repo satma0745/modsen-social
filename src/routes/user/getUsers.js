@@ -6,6 +6,8 @@ const { handleAsync, toDto } = require('../utils')
  * /api/users:
  *   get:
  *     summary: Get all users.
+ *     tags:
+ *       - Users
  *     responses:
  *       200:
  *         description: A list of users.

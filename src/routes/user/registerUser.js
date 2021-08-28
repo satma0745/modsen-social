@@ -6,6 +6,8 @@ const { handleAsync } = require('../utils')
  * /api/users:
  *   post:
  *     summary: Register a new user.
+ *     tags:
+ *       - Users
  *     requestBody:
  *       required: true
  *       content:

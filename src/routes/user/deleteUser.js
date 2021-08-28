@@ -11,6 +11,8 @@ const { handleAsync } = require('../utils')
  * /api/users/{id}:
  *   delete:
  *     summary: Delete specific user.
+ *     tags:
+ *       - Users
  *     parameters:
  *       - in: path
  *         name: id
