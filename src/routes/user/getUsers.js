@@ -1,5 +1,6 @@
 const { User } = require('../../schemas')
-const { handleAsync, toDto } = require('../utils')
+const { toUserDtos } = require('../../mappers').user
+const { handleAsync } = require('../shared')
 
 /**
  * @swagger
@@ -24,13 +25,10 @@ const { handleAsync, toDto } = require('../utils')
  *                   username:
  *                     type: string
  *                     example: qwerty
- *                   password:
- *                     type: string
- *                     example: pa$$word
  */
 const getUsers = handleAsync(async (_, res) => {
   const users = await User.find({})
-  const dtos = users.map(toDto)
+  const dtos = toUserDtos(users)
   res.status(200).send(dtos)
 })
 

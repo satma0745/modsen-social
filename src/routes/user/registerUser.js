@@ -1,5 +1,5 @@
 const { User } = require('../../schemas')
-const { handleAsync } = require('../utils')
+const { handleAsync } = require('../shared')
 
 /**
  * @swagger
