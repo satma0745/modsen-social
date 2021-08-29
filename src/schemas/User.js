@@ -28,6 +28,10 @@ userSchema.statics.existsWithUsername = async function existsWithUsername(userna
   return count > 0
 }
 
+userSchema.statics.findByUsername = function findByUsername(username) {
+  return this.findOne({ username })
+}
+
 const User = model('User', userSchema)
 
 module.exports = User

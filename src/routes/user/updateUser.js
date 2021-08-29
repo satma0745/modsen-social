@@ -1,4 +1,6 @@
 const { checkSchema } = require('express-validator')
+const { verify } = require('jsonwebtoken')
+
 const { User } = require('../../schemas')
 const { validObjectId, handleAsync, toObjectId } = require('../shared')
 
@@ -41,6 +43,8 @@ const schema = checkSchema({
  *     summary: Update specific user.
  *     tags:
  *       - Users
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -88,6 +92,10 @@ const schema = checkSchema({
  *                   type: string
  *                   nullable: true
  *                   example: Password is required.
+ *       401:
+ *         description: Unauthorized access attempt.
+ *       403:
+ *         description: Access denied.
  *       404:
  *         description: User with provided id does not exist.
  */
@@ -100,6 +108,24 @@ const handler = handleAsync(async (req, res) => {
   if (await User.existsWithUsername(req.body.username, req.params.id)) {
     const response = { username: 'Username already taken by someone else.' }
     res.status(400).send(response)
+    return
+  }
+
+  try {
+    const token = req.headers.authorization.replace('Bearer', '').trim()
+    const payload = verify(token, process.env.TOKEN_SECRET)
+
+    if (!req.params.id.equals(payload.sub)) {
+      res.sendStatus(403)
+      return
+    }
+
+    if (!(await User.existsWithId(payload.sub))) {
+      res.sendStatus(401)
+      return
+    }
+  } catch {
+    res.sendStatus(401)
     return
   }
 

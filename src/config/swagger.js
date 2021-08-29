@@ -9,6 +9,15 @@ const createSpec = () => {
       version,
       description: "Modsen's 3rd test task: Social REST API.",
     },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   }
 
   const options = {
