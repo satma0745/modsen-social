@@ -1,8 +1,5 @@
-const { verify } = require('jsonwebtoken')
-
 const { toUserDto } = require('../../mappers').user
 const { User } = require('../../schemas')
-
 const { handleAsync } = require('../shared')
 
 /**
@@ -32,21 +29,9 @@ const { handleAsync } = require('../shared')
  *         description: Unauthorized access attempt.
  */
 const userInfo = handleAsync(async (req, res) => {
-  try {
-    const token = req.headers.authorization.replace('Bearer', '').trim()
-    const payload = verify(token, process.env.TOKEN_SECRET)
-
-    if (!(await User.existsWithId(payload.sub))) {
-      res.sendStatus(401)
-      return
-    }
-
-    const user = await User.findById(payload.sub)
-    const dto = toUserDto(user)
-    res.status(200).send(dto)
-  } catch {
-    res.sendStatus(401)
-  }
+  const user = await User.findById(req.user.id)
+  const dto = toUserDto(user)
+  res.status(200).send(dto)
 })
 
 module.exports = userInfo

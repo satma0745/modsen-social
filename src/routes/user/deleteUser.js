@@ -1,6 +1,4 @@
 const { checkSchema } = require('express-validator')
-const { verify } = require('jsonwebtoken')
-
 const { User } = require('../../schemas')
 const { handleAsync, validObjectId, toObjectId } = require('../shared')
 
@@ -62,21 +60,8 @@ const handler = handleAsync(async (req, res) => {
     return
   }
 
-  try {
-    const token = req.headers.authorization.replace('Bearer', '').trim()
-    const payload = verify(token, process.env.TOKEN_SECRET)
-
-    if (!req.params.id.equals(payload.sub)) {
-      res.sendStatus(403)
-      return
-    }
-
-    if (!(await User.existsWithId(payload.sub))) {
-      res.sendStatus(401)
-      return
-    }
-  } catch {
-    res.sendStatus(401)
+  if (!req.params.id.equals(req.user.id)) {
+    res.sendStatus(403)
     return
   }
 

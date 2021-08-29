@@ -3,6 +3,29 @@ const {
   Types: { ObjectId },
 } = require('mongoose')
 const { validationResult } = require('express-validator')
+const { verify } = require('jsonwebtoken')
+
+const { User } = require('../schemas')
+
+const jwtAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.replace('Bearer', '').trim()
+    const payload = verify(token, process.env.TOKEN_SECRET)
+
+    if (!(await User.existsWithId(payload.sub))) {
+      res.sendStatus(401)
+      return
+    }
+
+    req.user = {
+      id: payload.sub,
+    }
+
+    next()
+  } catch {
+    res.sendStatus(401)
+  }
+}
 
 const validObjectId = (errorMessage) => {
   return (value) => {
@@ -41,4 +64,4 @@ const handleAsync = (requestHandler) => (req, res, next) => {
   requestHandler(req, res).catch(next)
 }
 
-module.exports = { validObjectId, toObjectId, handleAsync }
+module.exports = { validObjectId, toObjectId, jwtAuth, handleAsync }
