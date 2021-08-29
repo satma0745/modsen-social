@@ -1,10 +1,38 @@
-const {
-  isValidObjectId,
-  Types: { ObjectId },
-} = require('mongoose')
-
+const { checkSchema } = require('express-validator')
 const { User } = require('../../schemas')
-const { handleAsync } = require('../shared')
+const { validObjectId, handleAsync, toObjectId } = require('../shared')
+
+const schema = checkSchema({
+  id: {
+    in: 'params',
+    notEmpty: true,
+    errorMessage: 'User id is required.',
+    custom: {
+      options: validObjectId('Invalid user id.'),
+    },
+    customSanitizer: {
+      options: toObjectId,
+    },
+  },
+  username: {
+    in: 'body',
+    notEmpty: true,
+    errorMessage: 'Username is required.',
+    isLength: {
+      options: { min: 6, max: 20 },
+      errorMessage: 'Username must be at least 6 and at most 20 characters long.',
+    },
+  },
+  password: {
+    in: 'body',
+    notEmpty: true,
+    errorMessage: 'Password is required.',
+    isLength: {
+      options: { min: 6, max: 20 },
+      errorMessage: 'Password must be at least 6 and at most 20 characters long.',
+    },
+  },
+})
 
 /**
  * @swagger
@@ -30,31 +58,40 @@ const { handleAsync } = require('../shared')
  *             properties:
  *               username:
  *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 20
  *                 example: qwerty
  *               password:
  *                 type: string
- *                 example: pa$$word
+ *                 minLength: 6
+ *                 maxLength: 20
+ *                 example: password
  *     responses:
  *       200:
  *         description: User was updated successfully.
  *       400:
- *         description: Validation error.
+ *         description: Validation errors occurred.
  *         content:
  *           application/json:
  *             schema:
- *               type: string
- *               description: Error message.
- *               example: Invalid user id.
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Invalid user id.
+ *                 username:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Username must be at least 6 and at most 20 characters long.
+ *                 password:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Password is required.
  */
-const updateUser = handleAsync(async (req, res) => {
-  if (!isValidObjectId(req.params.id)) {
-    res.status(400).send('Invalid user id.')
-    return
-  }
-  const id = new ObjectId(req.params.id)
-
-  await User.findByIdAndUpdate(id, req.body, { runValidators: true })
+const handler = handleAsync(async (req, res) => {
+  await User.findByIdAndUpdate(req.params.id, req.body, { runValidators: true })
   res.sendStatus(200)
 })
 
-module.exports = updateUser
+module.exports = { schema, handler }

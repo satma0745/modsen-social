@@ -8,8 +8,8 @@ const deleteUser = require('./deleteUser')
 const router = Router()
 
 router.get('/', getUsers)
-router.post('/', registerUser)
-router.put('/:id', updateUser)
-router.delete('/:id', deleteUser)
+router.post('/', registerUser.schema, registerUser.handler)
+router.put('/:id', updateUser.schema, updateUser.handler)
+router.delete('/:id', deleteUser.schema, deleteUser.handler)
 
 module.exports = router

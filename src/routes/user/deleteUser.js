@@ -1,10 +1,20 @@
-const {
-  isValidObjectId,
-  Types: { ObjectId },
-} = require('mongoose')
-
+const { checkSchema } = require('express-validator')
 const { User } = require('../../schemas')
-const { handleAsync } = require('../shared')
+const { handleAsync, validObjectId, toObjectId } = require('../shared')
+
+const schema = checkSchema({
+  id: {
+    in: 'params',
+    notEmpty: true,
+    errorMessage: 'User id is required.',
+    custom: {
+      options: validObjectId('Invalid user id.'),
+    },
+    customSanitizer: {
+      options: toObjectId,
+    },
+  },
+})
 
 /**
  * @swagger
@@ -25,23 +35,20 @@ const { handleAsync } = require('../shared')
  *       200:
  *         description: User was deleted successfully.
  *       400:
- *         description: Validation error.
+ *         description: Validation errors occurred.
  *         content:
  *           application/json:
  *             schema:
- *               type: string
- *               description: Error message.
- *               example: Invalid user id.
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Invalid user id.
  */
-const deleteUser = handleAsync(async (req, res) => {
-  if (!isValidObjectId(req.params.id)) {
-    res.status(400).send('Invalid user id.')
-    return
-  }
-  const id = new ObjectId(req.params.id)
-
-  await User.findByIdAndDelete(id)
+const handler = handleAsync(async (req, res) => {
+  await User.findByIdAndDelete(req.params.id)
   res.sendStatus(200)
 })
 
-module.exports = deleteUser
+module.exports = { schema, handler }
