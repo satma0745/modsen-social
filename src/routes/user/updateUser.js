@@ -88,8 +88,15 @@ const schema = checkSchema({
  *                   type: string
  *                   nullable: true
  *                   example: Password is required.
+ *       404:
+ *         description: User with provided id does not exist.
  */
 const handler = handleAsync(async (req, res) => {
+  if (!(await User.existsWithId(req.params.id))) {
+    res.status(404).send('User with provided id does not exist.')
+    return
+  }
+
   await User.findByIdAndUpdate(req.params.id, req.body, { runValidators: true })
   res.sendStatus(200)
 })

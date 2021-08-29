@@ -1,6 +1,6 @@
 const { model, Schema } = require('mongoose')
 
-const UserSchema = new Schema({
+const userSchema = new Schema({
   username: {
     type: String,
     required: true,
@@ -18,6 +18,11 @@ const UserSchema = new Schema({
   },
 })
 
-const User = model('User', UserSchema)
+userSchema.statics.existsWithId = async function existsWithId(id) {
+  const count = await this.countDocuments({ _id: id })
+  return count > 0
+}
+
+const User = model('User', userSchema)
 
 module.exports = User
