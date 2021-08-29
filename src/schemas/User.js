@@ -23,6 +23,11 @@ userSchema.statics.existsWithId = async function existsWithId(id) {
   return count > 0
 }
 
+userSchema.statics.existsWithUsername = async function existsWithUsername(username, exceptionId) {
+  const count = await this.countDocuments({ username, _id: { $ne: exceptionId } })
+  return count > 0
+}
+
 const User = model('User', userSchema)
 
 module.exports = User

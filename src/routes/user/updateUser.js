@@ -97,6 +97,12 @@ const handler = handleAsync(async (req, res) => {
     return
   }
 
+  if (await User.existsWithUsername(req.body.username, req.params.id)) {
+    const response = { username: 'Username already taken by someone else.' }
+    res.status(400).send(response)
+    return
+  }
+
   await User.findByIdAndUpdate(req.params.id, req.body, { runValidators: true })
   res.sendStatus(200)
 })

@@ -67,6 +67,12 @@ const schema = checkSchema({
  *                   example: Password is required.
  */
 const handler = handleAsync(async (req, res) => {
+  if (await User.existsWithUsername(req.body.username)) {
+    const response = { username: 'Username already taken by someone else.' }
+    res.status(400).send(response)
+    return
+  }
+
   const user = new User(req.body)
   await user.save()
   res.sendStatus(201)
