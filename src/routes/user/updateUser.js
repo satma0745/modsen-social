@@ -185,18 +185,22 @@ const schema = checkSchema({
  *                   type: string
  *                   nullable: true
  *                   example: Password is required.
- *                 profile.headline:
- *                   type: string
+ *                 profile:
+ *                   type: object
  *                   nullable: true
- *                   example: Profile headline cannot exceed 100 characters.
- *                 profile.bio:
- *                   type: string
- *                   nullable: true
- *                   example: Bio cannot exceed 4000 characters.
- *                 profile.contacts:
- *                   type: string
- *                   nullable: true
- *                   example: Contacts must be an array.
+ *                   properties:
+ *                     headline:
+ *                       type: string
+ *                       nullable: true
+ *                       example: Profile headline cannot exceed 100 characters.
+ *                     bio:
+ *                       type: string
+ *                       nullable: true
+ *                       example: Bio cannot exceed 4000 characters.
+ *                     contacts:
+ *                       type: string
+ *                       nullable: true
+ *                       example: Contacts must be an array.
  *       401:
  *         description: Unauthorized access attempt.
  *       403:
