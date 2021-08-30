@@ -65,7 +65,9 @@ const handler = handleAsync(async (req, res) => {
     return
   }
 
+  await User.updateMany({}, { $pull: { 'profile.liked': req.params.id, 'profile.likedBy': req.params.id } })
   await User.findByIdAndDelete(req.params.id)
+
   res.sendStatus(200)
 })
 
