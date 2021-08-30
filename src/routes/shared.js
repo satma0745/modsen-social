@@ -59,17 +59,7 @@ const validationErrorResponse = (errors) => {
   const response = {}
 
   errors.forEach(({ msg, param }) => {
-    if (param.includes('.')) {
-      const separatorIndex = param.indexOf('.')
-      const object = param.slice(0, separatorIndex)
-      const property = param.slice(separatorIndex + 1)
-
-      if (!(object in response) || typeof response[object] !== 'object') {
-        response[object] = {}
-      }
-
-      response[object][property] = msg
-    } else if (!(param in response)) {
+    if (!(param in response)) {
       response[param] = msg
     }
   })

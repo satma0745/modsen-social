@@ -20,6 +20,7 @@ const userSchema = new Schema({
   profile: {
     type: profileSchema,
     required: true,
+    default: {},
   },
 })
 

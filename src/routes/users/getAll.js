@@ -1,5 +1,5 @@
 const { User } = require('../../models')
-const { toCompactUserDto } = require('../../mappers').user
+const { toUserDtos } = require('../../mappers').user
 const { handleAsync } = require('../shared')
 
 /**
@@ -27,15 +27,16 @@ const { handleAsync } = require('../shared')
  *                     example: qwerty
  *                   headline:
  *                     type: string
+ *                     nullable: true
  *                     example: Hello, my name is Qwerty.
  *                   likes:
  *                     type: number
  *                     example: 1
  */
-const getUsers = handleAsync(async (_, res) => {
+const getAll = handleAsync(async (_, res) => {
   const users = await User.find({})
-  const dtos = users.map(toCompactUserDto)
+  const dtos = toUserDtos(users)
   res.status(200).send(dtos)
 })
 
-module.exports = getUsers
+module.exports = getAll

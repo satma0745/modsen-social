@@ -1,24 +1,19 @@
 const { Router } = require('express')
 const { jwtAuth } = require('../shared')
 
-const deleteUser = require('./deleteUser')
-const getUser = require('./getUser')
-const getUsers = require('./getUsers')
-const likeProfile = require('./likeProfile')
-const registerUser = require('./registerUser')
-const unlikeProfile = require('./unlikeProfile')
-const updateUser = require('./updateUser')
+const $delete = require('./delete')
+const getSingle = require('./getSingle')
+const getAll = require('./getAll')
+const register = require('./register')
+const update = require('./update')
 
 const router = Router()
 
-router.get('/', getUsers)
-router.get('/:id', getUser.schema, getUser.handler)
+router.get('/', getAll)
+router.get('/:id', getSingle.schema, getSingle.handler)
 
-router.post('/:id/like', likeProfile.schema, jwtAuth, likeProfile.handler)
-router.post('/:id/unlike', unlikeProfile.schema, jwtAuth, unlikeProfile.handler)
-
-router.post('/', registerUser.schema, registerUser.handler)
-router.put('/:id', updateUser.schema, jwtAuth, updateUser.handler)
-router.delete('/:id', deleteUser.schema, jwtAuth, deleteUser.handler)
+router.post('/', register.schema, register.handler)
+router.put('/:id', update.schema, jwtAuth, update.handler)
+router.delete('/:id', $delete.schema, jwtAuth, $delete.handler)
 
 module.exports = router

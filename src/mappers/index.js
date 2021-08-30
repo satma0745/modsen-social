@@ -1,3 +1,4 @@
+const profile = require('./profile')
 const user = require('./user')
 
-module.exports = { user }
+module.exports = { profile, user }

@@ -1,4 +1,4 @@
-const { toCompactUserDto } = require('../../mappers').user
+const { toUserDto } = require('../../mappers').user
 const { User } = require('../../models')
 const { handleAsync } = require('../shared')
 
@@ -36,7 +36,7 @@ const { handleAsync } = require('../shared')
  */
 const userInfo = handleAsync(async (req, res) => {
   const user = await User.findById(req.user.id)
-  const dto = toCompactUserDto(user)
+  const dto = toUserDto(user)
   res.status(200).send(dto)
 })
 

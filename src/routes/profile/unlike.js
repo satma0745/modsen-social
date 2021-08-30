@@ -3,7 +3,7 @@ const { User } = require('../../models')
 const { handleAsync, validObjectId, toObjectId } = require('../shared')
 
 const schema = checkSchema({
-  id: {
+  userId: {
     in: 'params',
     notEmpty: true,
     errorMessage: 'User id is required.',
@@ -16,26 +16,33 @@ const schema = checkSchema({
   },
 })
 
+const remove = (array, element) => {
+  const indexToRemove = array.indexOf(element)
+  if (indexToRemove >= 0) {
+    array.splice(indexToRemove, 1)
+  }
+}
+
 /**
  * @swagger
- * /api/users/{id}/like:
+ * /api/users/{userId}/profile/unlike:
  *   post:
- *     summary: Like user's profile.
+ *     summary: Unlike user's profile.
  *     tags:
- *       - Users
+ *       - User profile
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: userId
  *         required: true
- *         description: User id to like.
+ *         description: User id to unlike.
  *         schema:
  *           type: string
  *           example: 6128bde4c7f13866c4b5c3af
  *     responses:
  *       200:
- *         description: User profile liked successfully.
+ *         description: User profile unliked successfully.
  *       400:
  *         description: Validation errors occurred.
  *         content:
@@ -46,7 +53,7 @@ const schema = checkSchema({
  *                  example: User profile was not previously liked by the requester.
  *                - type: object
  *                  properties:
- *                    id:
+ *                    userId:
  *                      type: string
  *                      nullable: true
  *                      example: Invalid users id.
@@ -56,23 +63,23 @@ const schema = checkSchema({
  *         description: User with provided id does not exist.
  */
 const handler = handleAsync(async (req, res) => {
-  if (!(await User.existsWithId(req.params.id))) {
+  if (!(await User.existsWithId(req.params.userId))) {
     res.status(404).send('User with provided id does not exist.')
     return
   }
 
   const requester = await User.findById(req.user.id)
-  const target = await User.findById(req.params.id)
+  const target = await User.findById(req.params.userId)
 
-  if (requester.profile.liked.includes(target._id)) {
-    res.status(400).send('User profile is already liked by the requester.')
+  if (!requester.profile.liked.includes(target._id)) {
+    res.status(400).send('User profile was not previously liked by the requester.')
     return
   }
 
-  requester.profile.liked.push(target._id)
+  remove(requester.profile.liked, target._id)
   await requester.save()
 
-  target.profile.likedBy.push(requester._id)
+  remove(target.profile.likedBy, requester._id)
   await target.save()
 
   res.sendStatus(200)

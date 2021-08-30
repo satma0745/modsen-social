@@ -3,7 +3,7 @@ const { User } = require('../../models')
 const { validObjectId, handleAsync, toObjectId, ofType } = require('../shared')
 
 const schema = checkSchema({
-  id: {
+  userId: {
     in: 'params',
     notEmpty: true,
     errorMessage: 'User id is required.',
@@ -14,33 +14,7 @@ const schema = checkSchema({
       options: toObjectId,
     },
   },
-  username: {
-    in: 'body',
-    notEmpty: true,
-    errorMessage: 'Username is required.',
-    isString: {
-      options: true,
-      errorMessage: 'Username must be of type string.',
-    },
-    isLength: {
-      options: { min: 6, max: 20 },
-      errorMessage: 'Username must be at least 6 and at most 20 characters long.',
-    },
-  },
-  password: {
-    in: 'body',
-    notEmpty: true,
-    errorMessage: 'Password is required.',
-    isString: {
-      options: true,
-      errorMessage: 'Password must be of type string.',
-    },
-    isLength: {
-      options: { min: 6, max: 20 },
-      errorMessage: 'Password must be at least 6 and at most 20 characters long.',
-    },
-  },
-  'profile.headline': {
+  headline: {
     in: 'body',
     custom: {
       options: ofType(['undefined', 'string'], 'Headline must be of type string.'),
@@ -50,7 +24,7 @@ const schema = checkSchema({
       errorMessage: 'Profile headline cannot exceed 100 characters.',
     },
   },
-  'profile.bio': {
+  bio: {
     in: 'body',
     custom: {
       options: ofType(['undefined', 'string'], 'Bio must be of type string.'),
@@ -60,7 +34,7 @@ const schema = checkSchema({
       errorMessage: 'Bio cannot exceed 4000 characters.',
     },
   },
-  'profile.contacts': {
+  contacts: {
     in: 'body',
     custom: {
       options: (contacts) => {
@@ -105,18 +79,18 @@ const schema = checkSchema({
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/users/{userId}/profile:
  *   put:
- *     summary: Update specific user.
+ *     summary: Update user profile.
  *     tags:
- *       - Users
+ *       - User profile
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: userId
  *         required: true
- *         description: User id to update.
+ *         description: Profile owner's id.
  *         schema:
  *           type: string
  *           example: 6128bde4c7f13866c4b5c3af
@@ -127,45 +101,32 @@ const schema = checkSchema({
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               headline:
  *                 type: string
- *                 minLength: 6
- *                 maxLength: 20
- *                 example: qwerty
- *               password:
+ *                 nullable: true
+ *                 maxLength: 100
+ *                 example: Hello, my name is Qwerty.
+ *               bio:
  *                 type: string
- *                 minLength: 6
- *                 maxLength: 20
- *                 example: password
- *               profile:
- *                 type: object
- *                 properties:
- *                   headline:
- *                     type: string
- *                     nullable: true
- *                     maxLength: 100
- *                     example: Hello, my name is Qwerty.
- *                   bio:
- *                     type: string
- *                     nullable: true
- *                     maxLength: 4000
- *                     example: Here are some facts about me ...
- *                   contacts:
- *                     type: array
- *                     items:
- *                       type: object
- *                       properties:
- *                         type:
- *                           type: string
- *                           maxLength: 20
- *                           example: Phone number
- *                         value:
- *                           type: string
- *                           maxLength: 100
- *                           example: +12 (34) 56-78-90
+ *                 nullable: true
+ *                 maxLength: 4000
+ *                 example: Here are some facts about me ...
+ *               contacts:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     type:
+ *                       type: string
+ *                       maxLength: 20
+ *                       example: Phone number
+ *                     value:
+ *                       type: string
+ *                       maxLength: 100
+ *                       example: +12 (34) 56-78-90
  *     responses:
  *       200:
- *         description: User was updated successfully.
+ *         description: User profile was updated successfully.
  *       400:
  *         description: Validation errors occurred.
  *         content:
@@ -173,34 +134,22 @@ const schema = checkSchema({
  *             schema:
  *               type: object
  *               properties:
- *                 id:
+ *                 userId:
  *                   type: string
  *                   nullable: true
  *                   example: Invalid user id.
- *                 username:
+ *                 headline:
  *                   type: string
  *                   nullable: true
- *                   example: Username must be at least 6 and at most 20 characters long.
- *                 password:
+ *                   example: Profile headline cannot exceed 100 characters.
+ *                 bio:
  *                   type: string
  *                   nullable: true
- *                   example: Password is required.
- *                 profile:
- *                   type: object
+ *                   example: Bio cannot exceed 4000 characters.
+ *                 contacts:
+ *                   type: string
  *                   nullable: true
- *                   properties:
- *                     headline:
- *                       type: string
- *                       nullable: true
- *                       example: Profile headline cannot exceed 100 characters.
- *                     bio:
- *                       type: string
- *                       nullable: true
- *                       example: Bio cannot exceed 4000 characters.
- *                     contacts:
- *                       type: string
- *                       nullable: true
- *                       example: Contacts must be an array.
+ *                   example: Contacts must be an array.
  *       401:
  *         description: Unauthorized access attempt.
  *       403:
@@ -209,23 +158,20 @@ const schema = checkSchema({
  *         description: User with provided id does not exist.
  */
 const handler = handleAsync(async (req, res) => {
-  if (!(await User.existsWithId(req.params.id))) {
+  if (!(await User.existsWithId(req.params.userId))) {
     res.status(404).send('User with provided id does not exist.')
     return
   }
 
-  if (await User.existsWithUsername(req.body.username, req.params.id)) {
-    const response = { username: 'Username already taken by someone else.' }
-    res.status(400).send(response)
-    return
-  }
-
-  if (!req.params.id.equals(req.user.id)) {
+  if (!req.params.userId.equals(req.user.id)) {
     res.sendStatus(403)
     return
   }
 
-  await User.findByIdAndUpdate(req.params.id, req.body, { runValidators: true })
+  const user = await User.findById(req.params.userId)
+  user.profile = req.body
+  await user.save()
+
   res.sendStatus(200)
 })
 

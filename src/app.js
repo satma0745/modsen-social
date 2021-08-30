@@ -22,6 +22,7 @@ const configureApp = ({ swaggerSpec }) => {
   // configure routes
   app.use('/api/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
   app.use('/api/auth', routes.auth)
+  app.use('/api/users/:userId/profile', routes.profile)
   app.use('/api/users', routes.user)
 
   // register error handlers

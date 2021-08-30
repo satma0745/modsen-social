@@ -1,7 +1,7 @@
 const { checkSchema } = require('express-validator')
 
 const { User } = require('../../models')
-const { toRichUserDto } = require('../../mappers').user
+const { toUserDto } = require('../../mappers').user
 
 const { handleAsync, validObjectId, toObjectId } = require('../shared')
 
@@ -48,29 +48,13 @@ const schema = checkSchema({
  *                 username:
  *                   type: string
  *                   example: qwerty
- *                 profile:
- *                   type: object
- *                   properties:
- *                     headline:
- *                       type: string
- *                       example: Hello, my name is Qwerty.
- *                     bio:
- *                       type: string
- *                       example: Here are some facts about me ...
- *                     likes:
- *                       type: string
- *                       example: 1
- *                     contacts:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           type:
- *                             type: string
- *                             example: Phone number
- *                           value:
- *                             type: string
- *                             example: +12 (34) 56-78-90
+ *                 headline:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Hello, my name is Qwerty.
+ *                 likes:
+ *                   type: string
+ *                   example: 1
  *       400:
  *         description: Validation errors occurred.
  *         content:
@@ -92,7 +76,7 @@ const handler = handleAsync(async (req, res) => {
   }
 
   const user = await User.findById(req.params.id)
-  const dto = toRichUserDto(user)
+  const dto = toUserDto(user)
   res.status(200).send(dto)
 })
 
