@@ -57,6 +57,9 @@ const schema = checkSchema({
  *                     bio:
  *                       type: string
  *                       example: Here are some facts about me ...
+ *                     likes:
+ *                       type: string
+ *                       example: 1
  *                     contacts:
  *                       type: array
  *                       items:

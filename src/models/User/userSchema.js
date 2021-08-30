@@ -1,37 +1,5 @@
-const { model, Schema } = require('mongoose')
-
-const contactSchema = new Schema({
-  type: {
-    type: String,
-    required: true,
-    maxLength: 20,
-    trim: true,
-  },
-  value: {
-    type: String,
-    required: true,
-    maxLength: 100,
-    trim: true,
-  },
-})
-
-const profileSchema = new Schema({
-  headline: {
-    type: String,
-    maxLength: 100,
-    trim: true,
-  },
-  bio: {
-    type: String,
-    maxLength: 4000,
-    trim: true,
-  },
-  contacts: {
-    type: [contactSchema],
-    required: true,
-    default: [],
-  },
-})
+const { Schema } = require('mongoose')
+const profileSchema = require('./profileSchema')
 
 const userSchema = new Schema({
   username: {
@@ -69,6 +37,4 @@ userSchema.statics.findByUsername = function findByUsername(username) {
   return this.findOne({ username })
 }
 
-const User = model('User', userSchema)
-
-module.exports = User
+module.exports = userSchema

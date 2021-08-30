@@ -28,6 +28,9 @@ const { handleAsync } = require('../shared')
  *                   headline:
  *                     type: string
  *                     example: Hello, my name is Qwerty.
+ *                   likes:
+ *                     type: number
+ *                     example: 1
  */
 const getUsers = handleAsync(async (_, res) => {
   const users = await User.find({})

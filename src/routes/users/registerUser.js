@@ -31,7 +31,6 @@ const schema = checkSchema({
   },
   'profile.headline': {
     in: 'body',
-    isOptional: true,
     isLength: {
       options: { max: 100 },
       errorMessage: 'Profile headline cannot exceed 100 characters.',

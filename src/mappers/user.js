@@ -3,6 +3,7 @@ const toCompactUserDto = (userModel) => {
     id: userModel._id.toString(),
     username: userModel.username,
     headline: userModel.profile.headline,
+    likes: userModel.profile.likedBy.length,
   }
 }
 
@@ -18,6 +19,7 @@ const toRichUserDto = (userModel) => {
     headline: userModel.profile.headline,
     bio: userModel.profile.bio,
     contacts,
+    likes: userModel.profile.likedBy.length,
   }
 
   return {

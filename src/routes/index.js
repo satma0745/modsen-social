@@ -1,4 +1,4 @@
 const auth = require('./auth')
-const user = require('./user')
+const user = require('./users')
 
 module.exports = { auth, user }
