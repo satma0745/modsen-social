@@ -1,4 +1,12 @@
-const toUserDto = (userModel) => {
+const toCompactUserDto = (userModel) => {
+  return {
+    id: userModel._id.toString(),
+    username: userModel.username,
+    headline: userModel.profile.headline,
+  }
+}
+
+const toRichUserDto = (userModel) => {
   const contacts = userModel.profile.contacts.map((contact) => {
     return {
       type: contact.type,
@@ -19,8 +27,4 @@ const toUserDto = (userModel) => {
   }
 }
 
-const toUserDtos = (userModels) => {
-  return userModels.map(toUserDto)
-}
-
-module.exports = { toUserDto, toUserDtos }
+module.exports = { toCompactUserDto, toRichUserDto }

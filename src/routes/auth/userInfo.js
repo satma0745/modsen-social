@@ -1,4 +1,4 @@
-const { toUserDto } = require('../../mappers').user
+const { toCompactUserDto } = require('../../mappers').user
 const { User } = require('../../models')
 const { handleAsync } = require('../shared')
 
@@ -25,12 +25,15 @@ const { handleAsync } = require('../shared')
  *                 password:
  *                   type: string
  *                   example: password
+ *                 headline:
+ *                   type: string
+ *                   example: Hello, my name is Qwerty.
  *       401:
  *         description: Unauthorized access attempt.
  */
 const userInfo = handleAsync(async (req, res) => {
   const user = await User.findById(req.user.id)
-  const dto = toUserDto(user)
+  const dto = toCompactUserDto(user)
   res.status(200).send(dto)
 })
 
