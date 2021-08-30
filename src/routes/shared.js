@@ -27,6 +27,20 @@ const jwtAuth = async (req, res, next) => {
   }
 }
 
+const ofType = (allowedTypes, errorMessage) => {
+  return (value) => {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const allowedType of allowedTypes) {
+      // eslint-disable-next-line valid-typeof
+      if (typeof value === allowedType) {
+        return true
+      }
+    }
+
+    throw new Error(errorMessage)
+  }
+}
+
 const validObjectId = (errorMessage) => {
   return (value) => {
     if (!isValidObjectId(value)) {
@@ -64,4 +78,4 @@ const handleAsync = (requestHandler) => (req, res, next) => {
   requestHandler(req, res).catch(next)
 }
 
-module.exports = { validObjectId, toObjectId, jwtAuth, handleAsync }
+module.exports = { ofType, validObjectId, toObjectId, jwtAuth, handleAsync }

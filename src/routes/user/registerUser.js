@@ -1,12 +1,16 @@
 const { checkSchema } = require('express-validator')
 const { User } = require('../../models')
-const { handleAsync } = require('../shared')
+const { handleAsync, ofType } = require('../shared')
 
 const schema = checkSchema({
   username: {
     in: 'body',
     notEmpty: true,
     errorMessage: 'Username is required.',
+    isString: {
+      options: true,
+      errorMessage: 'Username must be of type string.',
+    },
     isLength: {
       options: { min: 6, max: 20 },
       errorMessage: 'Username must be at least 6 and at most 20 characters long.',
@@ -16,6 +20,10 @@ const schema = checkSchema({
     in: 'body',
     notEmpty: true,
     errorMessage: 'Password is required.',
+    isString: {
+      options: true,
+      errorMessage: 'Password must be of type string.',
+    },
     isLength: {
       options: { min: 6, max: 20 },
       errorMessage: 'Password must be at least 6 and at most 20 characters long.',
@@ -23,13 +31,20 @@ const schema = checkSchema({
   },
   'profile.headline': {
     in: 'body',
+    isOptional: true,
     isLength: {
       options: { max: 100 },
       errorMessage: 'Profile headline cannot exceed 100 characters.',
     },
+    custom: {
+      options: ofType(['undefined', 'string'], 'Headline must be of type string.'),
+    },
   },
   'profile.bio': {
     in: 'body',
+    custom: {
+      options: ofType(['undefined', 'string'], 'Bio must be of type string.'),
+    },
     isLength: {
       options: { max: 4000 },
       errorMessage: 'Bio cannot exceed 4000 characters.',
