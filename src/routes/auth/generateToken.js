@@ -1,7 +1,7 @@
 const { checkSchema } = require('express-validator')
 const { sign } = require('jsonwebtoken')
 
-const { User } = require('../../schemas')
+const { User } = require('../../models')
 const { handleAsync } = require('../shared')
 
 const schema = checkSchema({

@@ -1,5 +1,5 @@
 const { toUserDto } = require('../../mappers').user
-const { User } = require('../../schemas')
+const { User } = require('../../models')
 const { handleAsync } = require('../shared')
 
 /**

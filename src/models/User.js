@@ -1,5 +1,38 @@
 const { model, Schema } = require('mongoose')
 
+const contactSchema = new Schema({
+  type: {
+    type: String,
+    required: true,
+    maxLength: 20,
+    trim: true,
+  },
+  value: {
+    type: String,
+    required: true,
+    maxLength: 100,
+    trim: true,
+  },
+})
+
+const profileSchema = new Schema({
+  headline: {
+    type: String,
+    maxLength: 100,
+    trim: true,
+  },
+  bio: {
+    type: String,
+    maxLength: 4000,
+    trim: true,
+  },
+  contacts: {
+    type: [contactSchema],
+    required: true,
+    default: [],
+  },
+})
+
 const userSchema = new Schema({
   username: {
     type: String,
@@ -15,6 +48,10 @@ const userSchema = new Schema({
     minLength: 6,
     maxLength: 20,
     trim: true,
+  },
+  profile: {
+    type: profileSchema,
+    required: true,
   },
 })
 

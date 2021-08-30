@@ -1,5 +1,5 @@
 const { checkSchema } = require('express-validator')
-const { User } = require('../../schemas')
+const { User } = require('../../models')
 const { handleAsync } = require('../shared')
 
 const schema = checkSchema({
@@ -19,6 +19,61 @@ const schema = checkSchema({
     isLength: {
       options: { min: 6, max: 20 },
       errorMessage: 'Password must be at least 6 and at most 20 characters long.',
+    },
+  },
+  'profile.headline': {
+    in: 'body',
+    isLength: {
+      options: { max: 100 },
+      errorMessage: 'Profile headline cannot exceed 100 characters.',
+    },
+  },
+  'profile.bio': {
+    in: 'body',
+    isLength: {
+      options: { max: 4000 },
+      errorMessage: 'Bio cannot exceed 4000 characters.',
+    },
+  },
+  'profile.contacts': {
+    in: 'body',
+    custom: {
+      options: (contacts) => {
+        if (!contacts) {
+          throw new Error('User contacts are required.')
+        }
+        if (!Array.isArray(contacts) || typeof contacts === 'string') {
+          throw new Error('Contacts must be an array.')
+        }
+
+        contacts.forEach((contact) => {
+          if (typeof contact !== 'object') {
+            throw new Error('Each contact record must be an object.')
+          }
+
+          if (!contact.type) {
+            throw new Error('Each contact record must contain type field.')
+          }
+          if (typeof contact.type !== 'string') {
+            throw new Error('Contact record type must be of type string.')
+          }
+          if (contact.type.length > 20) {
+            throw new Error('Contact record type cannot exceed 20 characters.')
+          }
+
+          if (!contact.type) {
+            throw new Error('Each contact record must contain value field.')
+          }
+          if (typeof contact.value !== 'string') {
+            throw new Error('Contact record value must be of type string.')
+          }
+          if (contact.value.length > 100) {
+            throw new Error('Contact record value cannot exceed 100 characters.')
+          }
+        })
+
+        return true
+      },
     },
   },
 })
@@ -47,6 +102,32 @@ const schema = checkSchema({
  *                 minLength: 6
  *                 maxLength: 20
  *                 example: password
+ *               profile:
+ *                 type: object
+ *                 properties:
+ *                   headline:
+ *                     type: string
+ *                     nullable: true
+ *                     maxLength: 100
+ *                     example: Hello, my name is Qwerty.
+ *                   bio:
+ *                     type: string
+ *                     nullable: true
+ *                     maxLength: 4000
+ *                     example: Here are some facts about me ...
+ *                   contacts:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         type:
+ *                           type: string
+ *                           maxLength: 20
+ *                           example: Phone number
+ *                         value:
+ *                           type: string
+ *                           maxLength: 100
+ *                           example: +12 (34) 56-78-90
  *     responses:
  *       201:
  *         description: User was registered successfully.
@@ -65,6 +146,18 @@ const schema = checkSchema({
  *                   type: string
  *                   nullable: true
  *                   example: Password is required.
+ *                 profile.headline:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Profile headline cannot exceed 100 characters.
+ *                 profile.bio:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Bio cannot exceed 4000 characters.
+ *                 profile.contacts:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Contacts must be an array.
  */
 const handler = handleAsync(async (req, res) => {
   if (await User.existsWithUsername(req.body.username)) {

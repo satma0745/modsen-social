@@ -5,7 +5,7 @@ const {
 const { validationResult } = require('express-validator')
 const { verify } = require('jsonwebtoken')
 
-const { User } = require('../schemas')
+const { User } = require('../models')
 
 const jwtAuth = async (req, res, next) => {
   try {

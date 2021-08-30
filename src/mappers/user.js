@@ -1,10 +1,22 @@
-const { modelToDto } = require('./shared')
-
 const toUserDto = (userModel) => {
-  const dto = modelToDto(userModel)
-  delete dto.password
+  const contacts = userModel.profile.contacts.map((contact) => {
+    return {
+      type: contact.type,
+      value: contact.value,
+    }
+  })
 
-  return dto
+  const profile = {
+    headline: userModel.profile.headline,
+    bio: userModel.profile.bio,
+    contacts,
+  }
+
+  return {
+    id: userModel._id.toString(),
+    username: userModel.username,
+    profile,
+  }
 }
 
 const toUserDtos = (userModels) => {

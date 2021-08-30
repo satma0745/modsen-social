@@ -1,5 +1,5 @@
 const { checkSchema } = require('express-validator')
-const { User } = require('../../schemas')
+const { User } = require('../../models')
 const { handleAsync, validObjectId, toObjectId } = require('../shared')
 
 const schema = checkSchema({
