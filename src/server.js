@@ -1,11 +1,17 @@
 const { database, environment, swagger } = require('./config')
 const configureApp = require('./app')
 
-environment.configure()
-database.configure()
-const swaggerSpec = swagger.createSpec()
+const startAsync = async () => {
+  environment.configure()
+  const swaggerSpec = swagger.createSpec()
+  const db = await database.configureAsync()
+  console.log('Connected to DB')
 
-const app = configureApp({ swaggerSpec })
-app.listen(process.env.PORT, () => {
+  const launchAppAsync = configureApp({ swaggerSpec })
+  const app = await launchAppAsync(process.env.PORT)
   console.log(`Listening on port ${process.env.PORT}`)
-})
+
+  return { app, db }
+}
+
+module.exports = startAsync

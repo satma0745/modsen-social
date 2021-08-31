@@ -1,17 +1,16 @@
 const mongoose = require('mongoose')
 
-const configure = () => {
-  mongoose.connect(process.env.DB_CONNECTION).catch(console.error)
+const configureAsync = () => {
+  return new Promise((resolve, reject) => {
+    mongoose.connect(process.env.DB_CONNECTION).catch(console.error)
+    const { connection } = mongoose
 
-  const db = mongoose.connection
-  db.on('error', console.error.bind(console, 'DB Connection failed: '))
-  db.once('open', () => {
-    console.log('Connected successfully')
+    connection.on('error', reject)
+
+    connection.once('open', () => {
+      resolve(connection)
+    })
   })
-
-  return mongoose.connection
 }
 
-module.exports = {
-  configure,
-}
+module.exports = { configureAsync }

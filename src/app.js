@@ -9,15 +9,17 @@ const configureApp = ({ swaggerSpec }) => {
 
   // register common middlewares
   app.use(express.json())
-  app.use(
-    responseTime((req, res, time) => {
-      const endpoint = `${req.method}: ${req.originalUrl}`
-      const response = res.statusCode
-      const elapsed = Math.round(time)
+  if (process.env.MODSEN_SOCIAL_ENV === 'development') {
+    app.use(
+      responseTime((req, res, time) => {
+        const endpoint = `${req.method}: ${req.originalUrl}`
+        const response = res.statusCode
+        const elapsed = Math.round(time)
 
-      console.log(`${endpoint} responded ${response} in ${elapsed}ms`)
-    })
-  )
+        console.log(`${endpoint} responded ${response} in ${elapsed}ms`)
+      })
+    )
+  }
 
   // configure routes
   app.use('/api/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
@@ -30,7 +32,15 @@ const configureApp = ({ swaggerSpec }) => {
     res.sendStatus(500)
   })
 
-  return app
+  const launchAsync = (port) => {
+    return new Promise((resolve) => {
+      app.listen(port, () => {
+        resolve(app)
+      })
+    })
+  }
+
+  return launchAsync
 }
 
 module.exports = configureApp
