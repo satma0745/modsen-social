@@ -58,6 +58,12 @@ const schema = checkSchema({
  *     responses:
  *       201:
  *         description: User was registered successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               description: Registered user id.
+ *               example: 6128bde4c7f13866c4b5c3af
  *       400:
  *         description: Validation errors occurred.
  *         content:
@@ -84,7 +90,8 @@ const handler = handleAsync(async (req, res) => {
   const user = new User(req.body)
   await user.save()
 
-  res.sendStatus(201)
+  const id = user._id.toString()
+  res.status(201).send(id)
 })
 
 module.exports = { schema, handler }
