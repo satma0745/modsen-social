@@ -37,7 +37,7 @@ const { handleAsync } = require('../shared')
 const userInfo = handleAsync(async (req, res) => {
   const user = await User.findById(req.user.id)
   const dto = toUserDto(user)
-  res.status(200).send(dto)
+  res.status(200).json(dto)
 })
 
 module.exports = userInfo

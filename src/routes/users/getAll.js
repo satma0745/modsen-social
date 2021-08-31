@@ -36,7 +36,7 @@ const { handleAsync } = require('../shared')
 const getAll = handleAsync(async (_, res) => {
   const users = await User.find({})
   const dtos = toUserDtos(users)
-  res.status(200).send(dtos)
+  res.status(200).json(dtos)
 })
 
 module.exports = getAll

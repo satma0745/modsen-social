@@ -81,13 +81,13 @@ const schema = checkSchema({
  */
 const handler = handleAsync(async (req, res) => {
   if (!(await User.existsWithId(req.params.userId))) {
-    res.status(404).send('User with provided id does not exist.')
+    res.status(404).json('User with provided id does not exist.')
     return
   }
 
   const user = await User.findById(req.params.userId)
   const dto = toProfileDto(user)
-  res.status(200).send(dto)
+  res.status(200).json(dto)
 })
 
 module.exports = { schema, handler }

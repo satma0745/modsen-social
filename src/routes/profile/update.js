@@ -159,7 +159,7 @@ const schema = checkSchema({
  */
 const handler = handleAsync(async (req, res) => {
   if (!(await User.existsWithId(req.params.userId))) {
-    res.status(404).send('User with provided id does not exist.')
+    res.status(404).json('User with provided id does not exist.')
     return
   }
 

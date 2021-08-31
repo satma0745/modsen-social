@@ -71,7 +71,7 @@ const handleAsync = (requestHandler) => (req, res, next) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) {
     const response = validationErrorResponse(errors.array())
-    res.status(400).send(response)
+    res.status(400).json(response)
     return
   }
 

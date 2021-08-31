@@ -65,19 +65,19 @@ const schema = checkSchema({
 const handler = handleAsync(async (req, res) => {
   if (!(await User.existsWithUsername(req.body.username))) {
     const response = { user: 'User with such username does not exist.' }
-    res.status(400).send(response)
+    res.status(400).json(response)
     return
   }
 
   const user = await User.findByUsername(req.body.username)
   if (req.body.password !== user.password) {
     const response = { password: 'Incorrect password provided.' }
-    res.status(400).send(response)
+    res.status(400).json(response)
     return
   }
 
   const token = sign({ sub: user.id }, process.env.TOKEN_SECRET, { expiresIn: '30 days' })
-  res.status(200).send(token)
+  res.status(200).json(token)
 })
 
 module.exports = { schema, handler }

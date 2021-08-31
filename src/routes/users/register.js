@@ -83,7 +83,7 @@ const schema = checkSchema({
 const handler = handleAsync(async (req, res) => {
   if (await User.existsWithUsername(req.body.username)) {
     const response = { username: 'Username already taken by someone else.' }
-    res.status(400).send(response)
+    res.status(400).json(response)
     return
   }
 
@@ -91,7 +91,7 @@ const handler = handleAsync(async (req, res) => {
   await user.save()
 
   const id = user._id.toString()
-  res.status(201).send(id)
+  res.status(201).json(id)
 })
 
 module.exports = { schema, handler }

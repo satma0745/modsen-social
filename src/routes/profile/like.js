@@ -57,7 +57,7 @@ const schema = checkSchema({
  */
 const handler = handleAsync(async (req, res) => {
   if (!(await User.existsWithId(req.params.userId))) {
-    res.status(404).send('User with provided id does not exist.')
+    res.status(404).json('User with provided id does not exist.')
     return
   }
 
@@ -65,7 +65,7 @@ const handler = handleAsync(async (req, res) => {
   const target = await User.findById(req.params.userId)
 
   if (requester.profile.liked.includes(target._id)) {
-    res.status(400).send('User profile is already liked by the requester.')
+    res.status(400).json('User profile is already liked by the requester.')
     return
   }
 
