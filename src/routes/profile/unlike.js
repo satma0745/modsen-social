@@ -8,7 +8,7 @@ const schema = checkSchema({
     notEmpty: true,
     errorMessage: 'User id is required.',
     custom: {
-      options: validObjectId('Invalid users id.'),
+      options: validObjectId('Invalid user id.'),
     },
     customSanitizer: {
       options: toObjectId,

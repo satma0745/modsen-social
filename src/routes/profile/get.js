@@ -72,7 +72,7 @@ const schema = checkSchema({
  *             schema:
  *               type: object
  *               properties:
- *                 id:
+ *                 userId:
  *                   type: string
  *                   nullable: true
  *                   example: Invalid user id.
