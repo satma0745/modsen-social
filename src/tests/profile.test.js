@@ -342,4 +342,77 @@ describe('User profile', () => {
         })
     })
   })
+
+  describe("GET: /api/users/{userId}/profile/favorites - Get user's favorites.", () => {
+    let fan
+    let favorites
+    before((done) => {
+      fan = new User({ username: 'test-fan', password: 'password' })
+      favorites = [
+        new User({ username: 'favorite-1', password: 'password' }),
+        new User({ username: 'favorite-2', password: 'password' }),
+        new User({ username: 'favorite-3', password: 'password' }),
+      ]
+
+      favorites.forEach((favorite) => {
+        favorite.profile.likedBy.push(fan._id)
+        fan.profile.liked.push(favorite._id)
+      })
+
+      const savePromise = Promise.all([
+        fan.save(),
+        ...favorites.map((favorite) => {
+          return favorite.save()
+        }),
+      ])
+
+      savePromise.then(() => {
+        done()
+      })
+    })
+
+    it('Invalid id.', (done) => {
+      chai
+        .request(server)
+        .get('/api/users/invalid/profile/favorites')
+        .end((_, response) => {
+          response.should.have.status(400)
+
+          response.body.should.be.a('object')
+          response.body.should.have.property('userId').eq('Invalid user id.')
+
+          done()
+        })
+    })
+
+    it('Try to get favorites of non-existing user.', (done) => {
+      chai
+        .request(server)
+        .get('/api/users/000000000000000000000000/profile/favorites')
+        .end((_, response) => {
+          response.should.have.status(404)
+          done()
+        })
+    })
+
+    it('Get favorites.', (done) => {
+      chai
+        .request(server)
+        .get(`/api/users/${fan._id.toString()}/profile/favorites`)
+        .end((_, response) => {
+          response.should.have.status(200)
+
+          response.body.should.be.a('array')
+          response.body.should.deep.include.members(
+            favorites.map((favorite) => ({
+              id: favorite._id.toString(),
+              username: favorite.username,
+              likes: favorite.profile.likedBy.length,
+            }))
+          )
+
+          done()
+        })
+    })
+  })
 })

@@ -3,7 +3,7 @@
     "start": "SET \"MODSEN_SOCIAL_ENV=development\" && node src/index.js",
     "test": "SET \"MODSEN_SOCIAL_ENV=testing\" && mocha 'src/tests/**/*.test.js'"
   },
-  "version": "0.0.18",
+  "version": "0.0.19",
   "dependencies": {
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
