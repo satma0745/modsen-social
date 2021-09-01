@@ -269,4 +269,77 @@ describe('User profile', () => {
       })
     })
   })
+
+  describe("GET: /api/users/{userId}/profile/fans - Get user profile's fans.", () => {
+    let favorite
+    let fans
+    before((done) => {
+      favorite = new User({ username: 'favorite', password: 'password' })
+      fans = [
+        new User({ username: 'fan-of-favorite-1', password: 'password' }),
+        new User({ username: 'fan-of-favorite-2', password: 'password' }),
+        new User({ username: 'fan-of-favorite-3', password: 'password' }),
+      ]
+
+      fans.forEach((fan) => {
+        favorite.profile.likedBy.push(fan._id)
+        fan.profile.liked.push(favorite._id)
+      })
+
+      const savePromise = Promise.all([
+        favorite.save(),
+        ...fans.map((fan) => {
+          return fan.save()
+        }),
+      ])
+
+      savePromise.then(() => {
+        done()
+      })
+    })
+
+    it('Invalid id.', (done) => {
+      chai
+        .request(server)
+        .get('/api/users/invalid/profile/fans')
+        .end((_, response) => {
+          response.should.have.status(400)
+
+          response.body.should.be.a('object')
+          response.body.should.have.property('userId').eq('Invalid user id.')
+
+          done()
+        })
+    })
+
+    it('Try to get fans of non-existing user.', (done) => {
+      chai
+        .request(server)
+        .get('/api/users/000000000000000000000000/profile/fans')
+        .end((_, response) => {
+          response.should.have.status(404)
+          done()
+        })
+    })
+
+    it('Get fans.', (done) => {
+      chai
+        .request(server)
+        .get(`/api/users/${favorite._id.toString()}/profile/fans`)
+        .end((_, response) => {
+          response.should.have.status(200)
+
+          response.body.should.be.a('array')
+          response.body.should.deep.include.members(
+            fans.map((fan) => ({
+              id: fan._id.toString(),
+              username: fan.username,
+              likes: fan.profile.likedBy.length,
+            }))
+          )
+
+          done()
+        })
+    })
+  })
 })
