@@ -64,7 +64,7 @@ const schema = checkSchema({
  */
 const handler = handleAsync(async (req, res) => {
   if (!(await User.existsWithUsername(req.body.username))) {
-    const response = { user: 'User with such username does not exist.' }
+    const response = { username: 'User with such username does not exist.' }
     res.status(400).json(response)
     return
   }

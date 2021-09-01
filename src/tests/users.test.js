@@ -2,7 +2,7 @@ const chai = require('chai')
 const chaiHttp = require('chai-http')
 const { sign } = require('jsonwebtoken')
 
-const startAsync = require('../server')
+const serverPromise = require('../server')
 
 chai.should()
 chai.use(chaiHttp)
@@ -10,13 +10,12 @@ chai.use(chaiHttp)
 describe('User CRUD', () => {
   let server
   before((done) => {
-    startAsync()
+    serverPromise
       .then(({ app, db }) => {
-        db.dropDatabase()
         server = app
-        done()
+        return db.dropDatabase()
       })
-      .catch(() => {
+      .then(() => {
         done()
       })
   })

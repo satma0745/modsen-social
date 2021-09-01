@@ -1,3 +1,3 @@
-const startServerAsync = require('./server')
+const serverPromise = require('./server')
 
-startServerAsync()
+serverPromise.then(() => console.log('Up and running'))

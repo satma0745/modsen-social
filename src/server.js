@@ -14,4 +14,6 @@ const startAsync = async () => {
   return { app, db }
 }
 
-module.exports = startAsync
+const serverPromise = startAsync()
+
+module.exports = serverPromise
