@@ -257,5 +257,31 @@ describe('User CRUD', () => {
       const qwertyCount = await User.countDocuments({ _id: qwerty._id })
       qwertyCount.should.be.eq(0)
     })
+
+    it('Check if likes are removed on delete.', async () => {
+      let favorite = new User({ username: 'favorite', password: 'password' })
+      const willBeDeleted = new User({ username: 'will-be-deleted', password: 'password' })
+      let fan = new User({ username: 'test-fan', password: 'password' })
+
+      favorite.profile.likedBy.push(willBeDeleted._id)
+      fan.profile.liked.push(willBeDeleted._id)
+
+      await Promise.all([favorite.save(), willBeDeleted.save(), fan.save()])
+
+      const tokenForWillBeDeleted = sign({ sub: willBeDeleted._id.toString() }, process.env.TOKEN_SECRET)
+      const response = await chai
+        .request(server)
+        .delete(`/api/users/${willBeDeleted._id.toString()}`)
+        .set('Authorization', `Bearer ${tokenForWillBeDeleted}`)
+
+      response.should.have.status(200)
+
+      // get updated documents
+      favorite = await User.findById(favorite._id)
+      fan = await User.findById(fan._id)
+
+      favorite.profile.likedBy.map((id) => id.toString()).should.not.include(willBeDeleted._id.toString())
+      fan.profile.likedBy.map((id) => id.toString()).should.not.include(fan._id.toString())
+    })
   })
 })
