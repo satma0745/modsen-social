@@ -10,122 +10,103 @@ chai.use(chaiHttp)
 
 describe('Authentication & Authorization', () => {
   let server
-  let user
-  before((done) => {
-    serverPromise
-      .then(({ app, db }) => {
-        server = app
-        return db.dropDatabase()
-      })
-      .then(() => {
-        user = new User({ username: 'qwerty', password: 'password' })
-        return user.save()
-      })
-      .then(() => {
-        done()
-      })
+  let dbConnection
+
+  before(async () => {
+    const { app, db } = await serverPromise
+
+    server = app
+    dbConnection = db
+
+    await db.dropDatabase()
+  })
+  after(() => {
+    return dbConnection.dropDatabase()
   })
 
   describe('POST: /api/auth/token - Generate authorization token for specified user credentials.', () => {
-    it('Invalid username.', (done) => {
-      chai
-        .request(server)
-        .post('/api/auth/token')
-        .send({ username: 'non-existing', password: user.password })
-        .end((_, response) => {
-          response.should.have.status(400)
+    let qwerty
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('username').eq('User with such username does not exist.')
-
-          done()
-        })
+    before(() => {
+      qwerty = new User({ username: 'qwerty', password: 'password' })
+      return qwerty.save()
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it('Invalid password.', (done) => {
-      chai
+    it('Invalid username.', async () => {
+      const response = await chai
         .request(server)
         .post('/api/auth/token')
-        .send({ username: user.username, password: 'incorrect' })
-        .end((_, response) => {
-          response.should.have.status(400)
+        .send({ username: 'non-existing', password: qwerty.password })
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('password').eq('Incorrect password provided.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('username').eq('User with such username does not exist.')
     })
 
-    it('Valid credentials.', (done) => {
-      chai
+    it('Invalid password.', async () => {
+      const response = await chai
         .request(server)
         .post('/api/auth/token')
-        .send({ username: user.username, password: user.password })
-        .end((_, response) => {
-          response.should.have.status(200)
+        .send({ username: qwerty.username, password: 'incorrect' })
 
-          response.body.should.be.a('string')
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('password').eq('Incorrect password provided.')
+    })
 
-          const token = response.body
-          const payload = verify(token, process.env.TOKEN_SECRET)
-          payload.should.be.a('object')
-          payload.should.have.property('sub').eq(user._id.toString())
+    it('Valid credentials.', async () => {
+      const response = await chai
+        .request(server)
+        .post('/api/auth/token')
+        .send({ username: qwerty.username, password: qwerty.password })
 
-          done()
-        })
+      response.should.have.status(200)
+      response.body.should.be.a('string')
+
+      const payload = verify(response.body, process.env.TOKEN_SECRET)
+      payload.should.be.a('object')
+      payload.should.have.property('sub').eq(qwerty._id.toString())
     })
   })
 
   describe('GET: /api/auth/me - Get current user info.', () => {
-    const token = (id) => sign({ sub: id }, process.env.TOKEN_SECRET)
-
-    it('No authorization token.', (done) => {
-      chai
-        .request(server)
-        .get('/api/auth/me')
-        .end((_, response) => {
-          response.should.have.status(401)
-          done()
-        })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it('Invalid authorization token - token in not parsable.', (done) => {
-      chai
-        .request(server)
-        .get('/api/auth/me')
-        .set('Authorization', 'Bearer invalid.auth.token')
-        .end((_, response) => {
-          response.should.have.status(401)
-          done()
-        })
+    it('No authorization token.', async () => {
+      const response = await chai.request(server).get('/api/auth/me')
+      response.should.have.status(401)
     })
 
-    it('Invalid authorization token - token owner does not exist.', (done) => {
-      chai
-        .request(server)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${token('000000000000000000000000')}`)
-        .end((_, response) => {
-          response.should.have.status(401)
-          done()
-        })
+    it('Invalid authorization token - token in not parsable.', async () => {
+      const response = await chai.request(server).get('/api/auth/me').set('Authorization', 'Bearer invalid.auth.token')
+      response.should.have.status(401)
     })
 
-    it('Valid auth token.', (done) => {
-      chai
-        .request(server)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${token(user._id.toString())}`)
-        .end((_, response) => {
-          response.should.have.status(200)
+    it('Invalid authorization token - token owner does not exist.', async () => {
+      const token = sign({ sub: '000000000000000000000000' }, process.env.TOKEN_SECRET)
+      const response = await chai.request(server).get('/api/auth/me').set('Authorization', `Bearer ${token}`)
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('id').eq(user._id.toString())
-          response.body.should.have.property('username').eq(user.username)
+      response.should.have.status(401)
+    })
 
-          done()
-        })
+    it('Valid auth token.', async () => {
+      const qwerty = new User({ username: 'qwerty', password: 'password' })
+      await qwerty.save()
+
+      const token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+      const response = await chai.request(server).get('/api/auth/me').set('Authorization', `Bearer ${token}`)
+
+      response.should.have.status(200)
+      response.body.should.be.a('object')
+      response.body.should.have.property('id').eq(qwerty._id.toString())
+      response.body.should.have.property('username').eq(qwerty.username)
+      response.body.should.not.have.property('headline')
+      response.body.should.have.property('likes').eq(0)
     })
   })
 })
