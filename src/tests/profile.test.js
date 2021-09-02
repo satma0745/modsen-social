@@ -9,271 +9,244 @@ chai.should()
 chai.use(chaiHttp)
 
 describe('User profile', () => {
-  const token = (id) => sign({ sub: id }, process.env.TOKEN_SECRET)
-
   let server
-  let user
-  before((done) => {
-    serverPromise
-      .then(({ app, db }) => {
-        server = app
-        return db.dropDatabase()
-      })
-      .then(() => {
-        user = new User({ username: 'qwerty', password: 'password' })
-        return user.save()
-      })
-      .then(() => {
-        done()
-      })
+  let dbConnection
+
+  before(async () => {
+    const { app, db } = await serverPromise
+
+    server = app
+    dbConnection = db
+
+    await db.dropDatabase()
+  })
+  after(() => {
+    return dbConnection.dropDatabase()
   })
 
   describe("GET: /api/users/{userId}/profile - Get user's profile.", () => {
-    it('Incorrect user id.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users/invalid/profile')
-        .end((_, response) => {
-          response.should.have.status(400)
-
-          response.body.should.be.a('object')
-          response.body.should.have.property('userId').eq('Invalid user id.')
-
-          done()
-        })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it("Try get non-existing user's profile.", (done) => {
-      chai
-        .request(server)
-        .get('/api/users/000000000000000000000000/profile')
-        .end((_, response) => {
-          response.should.have.status(404)
-          done()
-        })
+    it('Incorrect user id.', async () => {
+      const response = await chai.request(server).get('/api/users/invalid/profile')
+
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('userId').eq('Invalid user id.')
     })
 
-    it("Get existing user's profile.", (done) => {
-      new User({
-        username: 'get-user-profile',
+    it("Try get non-existing user's profile.", async () => {
+      const response = await chai.request(server).get('/api/users/000000000000000000000000/profile')
+      response.should.have.status(404)
+    })
+
+    it("Get existing user's profile.", async () => {
+      const qwerty = new User({
+        username: 'qwerty',
         password: 'password',
         profile: {
           headline: 'headline',
           bio: 'bio',
-          contacts: [{ type: 'contact type', value: 'contact value' }],
+          contacts: [
+            { type: 'phone number', value: '+xxx (xxx) xxx-xx-xx' },
+            { type: 'telegram', value: 't.me/qwerty' },
+          ],
         },
       })
-        .save()
-        .then(($user) => {
-          chai
-            .request(server)
-            .get(`/api/users/${$user._id.toString()}/profile`)
-            .end((_, response) => {
-              response.should.have.status(200)
+      await qwerty.save()
 
-              response.body.should.be.a('object')
-              response.body.should.have.property('headline').eq('headline')
-              response.body.should.have.property('bio').eq('bio')
-              response.body.should.have.property('contacts')
-              response.body.contacts.should.be.a('array')
-              response.body.contacts
-                .map(({ type, value }) => ({ type, value }))
-                .should.deep.include.members([{ type: 'contact type', value: 'contact value' }])
+      const response = await chai.request(server).get(`/api/users/${qwerty._id.toString()}/profile`)
 
-              done()
-            })
-        })
+      response.should.have.status(200)
+      response.body.should.be.a('object')
+      response.body.should.have.property('headline').eq(qwerty.profile.headline)
+      response.body.should.have.property('bio').eq(qwerty.profile.bio)
+      response.body.should.have.property('contacts').that.is.a('array')
+      response.body.contacts.should.deep.include.members(
+        qwerty.profile.contacts.map(({ type, value }) => ({ type, value }))
+      )
     })
   })
 
   describe('PUT: /api/users/{userId}/profile - Update user profile.', () => {
-    it('Invalid data.', (done) => {
-      chai
-        .request(server)
-        .put(`/api/users/invalid/profile`)
-        .set('Authorization', `Bearer ${token(user._id.toString())}`)
-        .send({
-          headline: '0123456789'.repeat(11),
-          bio: '0123456789'.repeat(401),
-          contacts: [
-            {
-              type: '0123456789'.repeat(3),
-              value: '0123456789',
-            },
-          ],
-        })
-        .end((_, response) => {
-          response.should.have.status(400)
+    let qwerty
+    let token
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('userId').eq('Invalid user id.')
-          response.body.should.have.property('headline').eq('Profile headline cannot exceed 100 characters.')
-          response.body.should.have.property('bio').eq('Bio cannot exceed 4000 characters.')
-          response.body.should.have.property('contacts').eq('Contact record type cannot exceed 20 characters.')
+    before(async () => {
+      qwerty = new User({ username: 'qwerty', password: 'username' })
+      await qwerty.save()
 
-          done()
-        })
+      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it('Valid data.', (done) => {
-      chai
+    it('Invalid data.', async () => {
+      const invalidUpdateProfileData = {
+        headline: '0123456789'.repeat(11),
+        bio: '0123456789'.repeat(401),
+        contacts: [{ type: '0123456789'.repeat(3), value: '0123456789' }],
+      }
+
+      const response = await chai
         .request(server)
-        .put(`/api/users/${user._id.toString()}/profile`)
-        .set('Authorization', `Bearer ${token(user._id.toString())}`)
-        .send({
-          headline: 'headline',
-          bio: 'bio',
-          contacts: [
-            {
-              type: 'contact type',
-              value: 'contact value',
-            },
-          ],
-        })
-        .end((_, response) => {
-          response.should.have.status(200)
+        .put(`/api/users/invalid/profile`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(invalidUpdateProfileData)
 
-          // check if saved correctly
-          User.findById(user.id).then((owner) => {
-            const { profile } = owner
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('userId').eq('Invalid user id.')
+      response.body.should.have.property('headline').eq('Profile headline cannot exceed 100 characters.')
+      response.body.should.have.property('bio').eq('Bio cannot exceed 4000 characters.')
+      response.body.should.have.property('contacts').eq('Contact record type cannot exceed 20 characters.')
+    })
 
-            profile.should.have.property('headline').eq('headline')
-            profile.should.have.property('bio').eq('bio')
+    it('Valid data.', async () => {
+      const profileData = {
+        headline: 'headline',
+        bio: 'bio',
+        contacts: [{ type: 'contact type', value: 'contact value' }],
+      }
 
-            profile.contacts
-              .map(({ type, value }) => ({ type, value }))
-              .should.deep.include.members([
-                {
-                  type: 'contact type',
-                  value: 'contact value',
-                },
-              ])
+      const response = await chai
+        .request(server)
+        .put(`/api/users/${qwerty._id.toString()}/profile`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(profileData)
 
-            done()
-          })
-        })
+      // get updated document
+      qwerty = await User.findById(qwerty._id)
+
+      response.should.have.status(200)
+
+      qwerty.profile.should.have.property('headline').eq(profileData.headline)
+      qwerty.profile.should.have.property('bio').eq(profileData.bio)
+      qwerty.profile.contacts
+        .map(({ type, value }) => ({ type, value }))
+        .should.deep.include.members(profileData.contacts)
     })
   })
 
   describe("POST: /api/users/{userId}/profile/like - Like user's profile.", () => {
-    it('Incorrect user id.', (done) => {
-      chai
+    let favorite
+    let fan
+    let fansToken
+
+    before(async () => {
+      favorite = new User({ username: 'favorite', password: 'password' })
+      fan = new User({ username: 'test-fan', password: 'password' })
+
+      await Promise.all([favorite.save(), fan.save()])
+
+      fansToken = sign({ sub: fan._id.toString() }, process.env.TOKEN_SECRET)
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
+    })
+
+    it('Incorrect user id.', async () => {
+      const response = await chai
         .request(server)
         .post('/api/users/invalid/profile/like')
-        .set('Authorization', `Bearer ${token(user._id.toString())}`)
-        .end((_, response) => {
-          response.should.have.status(400)
+        .set('Authorization', `Bearer ${fansToken}`)
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('userId').eq('Invalid user id.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('userId').eq('Invalid user id.')
     })
 
-    it("Try like non-existing user's profile.", (done) => {
-      chai
+    it("Try like non-existing user's profile.", async () => {
+      const response = await chai
         .request(server)
         .post('/api/users/000000000000000000000000/profile/like')
-        .set('Authorization', `Bearer ${token(user._id.toString())}`)
-        .end((_, response) => {
-          response.should.have.status(404)
-          done()
-        })
+        .set('Authorization', `Bearer ${fansToken}`)
+
+      response.should.have.status(404)
     })
 
-    it("Like existing user's profile.", (done) => {
-      new User({
-        username: 'like-user-profile',
-        password: 'password',
-        profile: {
-          headline: 'headline',
-          bio: 'bio',
-          contacts: [{ type: 'contact type', value: 'contact value' }],
-        },
-      })
-        .save()
-        .then(({ _id: id }) => {
-          chai
-            .request(server)
-            .post(`/api/users/${id.toString()}/profile/like`)
-            .set('Authorization', `Bearer ${token(user._id.toString())}`)
-            .end((_, response) => {
-              response.should.have.status(200)
+    it("Like existing user's profile.", async () => {
+      const response = await chai
+        .request(server)
+        .post(`/api/users/${favorite._id.toString()}/profile/like`)
+        .set('Authorization', `Bearer ${fansToken}`)
 
-              User.findById(id).then(({ profile }) => {
-                const likedBy = profile.likedBy.map((objectId) => objectId.toString())
-                likedBy.should.include(user._id.toString())
-                done()
-              })
-            })
-        })
+      // get updated documents
+      fan = await User.findById(fan._id)
+      favorite = await User.findById(favorite._id)
+
+      response.should.have.status(200)
+
+      fan.profile.liked.map((id) => id.toString()).should.include(favorite._id.toString())
+      favorite.profile.likedBy.map((id) => id.toString()).should.include(fan._id.toString())
     })
   })
 
   describe("POST: /api/users/{userId}/profile/unlike - Unlike user's profile.", () => {
-    it('Incorrect user id.', (done) => {
-      chai
+    let favorite
+    let fan
+    let fansToken
+
+    before(async () => {
+      favorite = new User({ username: 'favorite', password: 'password' })
+      fan = new User({ username: 'test-fan', password: 'password' })
+
+      favorite.profile.likedBy.push(fan._id)
+      fan.profile.liked.push(favorite._id)
+
+      await Promise.all([favorite.save(), fan.save()])
+
+      fansToken = sign({ sub: fan._id.toString() }, process.env.TOKEN_SECRET)
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
+    })
+
+    it('Incorrect user id.', async () => {
+      const response = await chai
         .request(server)
         .post('/api/users/invalid/profile/unlike')
-        .set('Authorization', `Bearer ${token(user._id.toString())}`)
-        .end((_, response) => {
-          response.should.have.status(400)
+        .set('Authorization', `Bearer ${fansToken}`)
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('userId').eq('Invalid user id.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('userId').eq('Invalid user id.')
     })
 
-    it("Try unlike non-existing user's profile.", (done) => {
-      chai
+    it("Try unlike non-existing user's profile.", async () => {
+      const response = await chai
         .request(server)
         .post('/api/users/000000000000000000000000/profile/unlike')
-        .set('Authorization', `Bearer ${token(user._id.toString())}`)
-        .end((_, response) => {
-          response.should.have.status(404)
-          done()
-        })
+        .set('Authorization', `Bearer ${fansToken}`)
+
+      response.should.have.status(404)
     })
 
-    it("Unlike existing user's profile.", (done) => {
-      const favorite = new User({
-        username: 'unlike-user-profile',
-        password: 'password',
-        profile: {
-          headline: 'headline',
-          bio: 'bio',
-          contacts: [{ type: 'contact type', value: 'contact value' }],
-          likedBy: [user._id],
-        },
-      })
+    it("Unlike existing user's profile.", async () => {
+      const response = await chai
+        .request(server)
+        .post(`/api/users/${favorite._id.toString()}/profile/unlike`)
+        .set('Authorization', `Bearer ${fansToken}`)
 
-      user.profile.liked.push(favorite._id)
+      // get updated documents
+      fan = await User.findById(fan._id)
+      favorite = await User.findById(favorite._id)
 
-      Promise.all([favorite.save(), user.save()]).then(() => {
-        chai
-          .request(server)
-          .post(`/api/users/${favorite._id.toString()}/profile/unlike`)
-          .set('Authorization', `Bearer ${token(user._id.toString())}`)
-          .end((_, response) => {
-            response.should.have.status(200)
+      response.should.have.status(200)
 
-            User.findById(favorite._id).then(({ profile }) => {
-              const likedBy = profile.likedBy.map((objectId) => objectId.toString())
-              likedBy.should.not.include(user._id.toString())
-              done()
-            })
-          })
-      })
+      favorite.profile.likedBy.map((id) => id.toString()).should.not.include(fan._id.toString())
+      fan.profile.liked.map((id) => id.toString()).should.not.include(favorite._id.toString())
     })
   })
 
   describe("GET: /api/users/{userId}/profile/fans - Get user profile's fans.", () => {
     let favorite
     let fans
-    before((done) => {
+
+    before(() => {
       favorite = new User({ username: 'favorite', password: 'password' })
       fans = [
         new User({ username: 'fan-of-favorite-1', password: 'password' }),
@@ -286,67 +259,50 @@ describe('User profile', () => {
         fan.profile.liked.push(favorite._id)
       })
 
-      const savePromise = Promise.all([
+      return Promise.all([
         favorite.save(),
         ...fans.map((fan) => {
           return fan.save()
         }),
       ])
-
-      savePromise.then(() => {
-        done()
-      })
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it('Invalid id.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users/invalid/profile/fans')
-        .end((_, response) => {
-          response.should.have.status(400)
+    it('Invalid id.', async () => {
+      const response = await chai.request(server).get('/api/users/invalid/profile/fans')
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('userId').eq('Invalid user id.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('userId').eq('Invalid user id.')
     })
 
-    it('Try to get fans of non-existing user.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users/000000000000000000000000/profile/fans')
-        .end((_, response) => {
-          response.should.have.status(404)
-          done()
-        })
+    it('Try to get fans of non-existing user.', async () => {
+      const response = await chai.request(server).get('/api/users/000000000000000000000000/profile/fans')
+      response.should.have.status(404)
     })
 
-    it('Get fans.', (done) => {
-      chai
-        .request(server)
-        .get(`/api/users/${favorite._id.toString()}/profile/fans`)
-        .end((_, response) => {
-          response.should.have.status(200)
+    it('Get fans.', async () => {
+      const response = await chai.request(server).get(`/api/users/${favorite._id.toString()}/profile/fans`)
 
-          response.body.should.be.a('array')
-          response.body.should.deep.include.members(
-            fans.map((fan) => ({
-              id: fan._id.toString(),
-              username: fan.username,
-              likes: fan.profile.likedBy.length,
-            }))
-          )
-
-          done()
-        })
+      response.should.have.status(200)
+      response.body.should.be.a('array')
+      response.body.should.deep.include.members(
+        fans.map(({ _id, username, profile: { likedBy } }) => ({
+          id: _id.toString(),
+          username,
+          likes: likedBy.length,
+        }))
+      )
     })
   })
 
   describe("GET: /api/users/{userId}/profile/favorites - Get user's favorites.", () => {
     let fan
     let favorites
-    before((done) => {
+
+    before(() => {
       fan = new User({ username: 'test-fan', password: 'password' })
       favorites = [
         new User({ username: 'favorite-1', password: 'password' }),
@@ -359,60 +315,42 @@ describe('User profile', () => {
         fan.profile.liked.push(favorite._id)
       })
 
-      const savePromise = Promise.all([
+      return Promise.all([
         fan.save(),
         ...favorites.map((favorite) => {
           return favorite.save()
         }),
       ])
-
-      savePromise.then(() => {
-        done()
-      })
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it('Invalid id.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users/invalid/profile/favorites')
-        .end((_, response) => {
-          response.should.have.status(400)
+    it('Invalid id.', async () => {
+      const response = await chai.request(server).get('/api/users/invalid/profile/favorites')
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('userId').eq('Invalid user id.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('userId').eq('Invalid user id.')
     })
 
-    it('Try to get favorites of non-existing user.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users/000000000000000000000000/profile/favorites')
-        .end((_, response) => {
-          response.should.have.status(404)
-          done()
-        })
+    it('Try to get favorites of non-existing user.', async () => {
+      const response = await chai.request(server).get('/api/users/000000000000000000000000/profile/favorites')
+      response.should.have.status(404)
     })
 
-    it('Get favorites.', (done) => {
-      chai
-        .request(server)
-        .get(`/api/users/${fan._id.toString()}/profile/favorites`)
-        .end((_, response) => {
-          response.should.have.status(200)
+    it('Get favorites.', async () => {
+      const response = await chai.request(server).get(`/api/users/${fan._id.toString()}/profile/favorites`)
 
-          response.body.should.be.a('array')
-          response.body.should.deep.include.members(
-            favorites.map((favorite) => ({
-              id: favorite._id.toString(),
-              username: favorite.username,
-              likes: favorite.profile.likedBy.length,
-            }))
-          )
-
-          done()
-        })
+      response.should.have.status(200)
+      response.body.should.be.a('array')
+      response.body.should.deep.include.members(
+        favorites.map(({ _id, username, profile: { likedBy } }) => ({
+          id: _id.toString(),
+          username,
+          likes: likedBy.length,
+        }))
+      )
     })
   })
 })
