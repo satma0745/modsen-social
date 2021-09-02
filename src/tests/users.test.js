@@ -48,6 +48,18 @@ describe('User CRUD', () => {
       response.body.should.have.property('password').eq('Password must be at least 6 and at most 20 characters long.')
     })
 
+    it('Duplicate usernames.', async () => {
+      const qwerty = new User({ username: 'qwerty-duplicate', password: 'password' })
+      await qwerty.save()
+
+      const duplicateData = { username: 'qwerty-duplicate', password: 'password' }
+      const response = await chai.request(server).post('/api/users').send(duplicateData)
+
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('username').eq('Username already taken by someone else.')
+    })
+
     it('Valid user data.', async () => {
       const userData = { username: 'qwerty', password: 'password' }
       const response = await chai.request(server).post('/api/users').send(userData)
@@ -166,6 +178,22 @@ describe('User CRUD', () => {
       response.body.should.be.a('object')
       response.body.should.have.property('username').eq('Username must be at least 6 and at most 20 characters long.')
       response.body.should.have.property('password').eq('Password must be at least 6 and at most 20 characters long.')
+    })
+
+    it('Duplicate usernames.', async () => {
+      const duplicate = new User({ username: 'qwerty-duplicate', password: 'password' })
+      await duplicate.save()
+
+      const duplicatesToken = sign({ sub: duplicate._id.toString() }, process.env.TOKEN_SECRET)
+      const response = await chai
+        .request(server)
+        .put(`/api/users/${duplicate._id.toString()}`)
+        .set('Authorization', `Bearer ${duplicatesToken}`)
+        .send({ username: qwerty.username, password: duplicate.password })
+
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('username').eq('Username already taken by someone else.')
     })
 
     it('Valid user data.', async () => {
