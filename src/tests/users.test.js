@@ -2,6 +2,7 @@ const chai = require('chai')
 const chaiHttp = require('chai-http')
 const { sign } = require('jsonwebtoken')
 
+const { User } = require('../models')
 const serverPromise = require('../server')
 
 chai.should()
@@ -9,253 +10,224 @@ chai.use(chaiHttp)
 
 describe('User CRUD', () => {
   let server
-  before((done) => {
-    serverPromise
-      .then(({ app, db }) => {
-        server = app
-        return db.dropDatabase()
-      })
-      .then(() => {
-        done()
-      })
+  let dbConnection
+
+  before(async () => {
+    const { app, db } = await serverPromise
+
+    server = app
+    dbConnection = db
+
+    await db.dropDatabase()
+  })
+  after(() => {
+    return dbConnection.dropDatabase()
   })
 
-  const testUser = { username: 'test0745', password: 'password' }
-  const token = () => sign({ sub: testUser.id }, process.env.TOKEN_SECRET)
-
   describe('POST: /api/users - Register a new user.', () => {
-    it('No user data.', (done) => {
-      chai
-        .request(server)
-        .post('/api/users')
-        .send({})
-        .end((_, response) => {
-          response.should.have.status(400)
-
-          response.body.should.be.a('object')
-          response.body.should.have.property('username').eq('Username is required.')
-          response.body.should.have.property('password').eq('Password is required.')
-
-          done()
-        })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it('Invalid user data (long username & short password).', (done) => {
-      chai
-        .request(server)
-        .post('/api/users')
-        .send({ username: 'ridiculously long username', password: '1234' })
-        .end((_, response) => {
-          response.should.have.status(400)
+    it('No user data.', async () => {
+      const response = await chai.request(server).post('/api/users').send({})
 
-          response.body.should.be.a('object')
-          response.body.should.have
-            .property('username')
-            .eq('Username must be at least 6 and at most 20 characters long.')
-          response.body.should.have
-            .property('password')
-            .eq('Password must be at least 6 and at most 20 characters long.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('username').eq('Username is required.')
+      response.body.should.have.property('password').eq('Password is required.')
     })
 
-    it('Valid user data.', (done) => {
-      chai
-        .request(server)
-        .post('/api/users')
-        .send(testUser)
-        .end((_, response) => {
-          response.should.have.status(201)
+    it('Invalid user data (long username & short password).', async () => {
+      const userData = { username: 'ridiculously long username', password: '1234' }
+      const response = await chai.request(server).post('/api/users').send(userData)
 
-          response.body.should.be.a('string')
-          testUser.id = response.body
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('username').eq('Username must be at least 6 and at most 20 characters long.')
+      response.body.should.have.property('password').eq('Password must be at least 6 and at most 20 characters long.')
+    })
 
-          done()
-        })
+    it('Valid user data.', async () => {
+      const userData = { username: 'qwerty', password: 'password' }
+      const response = await chai.request(server).post('/api/users').send(userData)
+
+      response.should.have.status(201)
+      response.body.should.be.a('string')
+
+      const userId = response.body
+      const qwerty = await User.findById(userId)
+      qwerty.username.should.be.eq(userData.username)
+      qwerty.password.should.be.eq(userData.password)
     })
   })
 
   describe('GET: /api/users - Get all users.', () => {
-    it('Has registered user.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users')
-        .end((_, response) => {
-          response.should.have.status(200)
+    after(() => {
+      return dbConnection.db.dropCollection('users')
+    })
 
-          response.body.should.be.a('array')
-          response.body.should.deep.include.members([
-            {
-              id: testUser.id,
-              username: testUser.username,
-              likes: 0,
-            },
-          ])
+    it('Has registered user.', async () => {
+      await User.insertMany([
+        { username: 'qwerty-1', password: 'password' },
+        { username: 'qwerty-2', password: 'password' },
+        { username: 'qwerty-3', password: 'password' },
+      ])
 
-          done()
-        })
+      const users = await User.find({})
+      const userDtos = users.map(({ _id, username }) => ({ id: _id.toString(), username, likes: 0 }))
+
+      const response = await chai.request(server).get('/api/users')
+
+      response.should.have.status(200)
+      response.body.should.be.a('array')
+      response.body.should.deep.include.members(userDtos)
     })
   })
 
   describe('GET: /api/users/{id} - Get specific user.', () => {
-    it('Invalid user id.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users/invalid_user_id')
-        .end((_, response) => {
-          response.should.have.status(400)
-
-          response.body.should.be.a('object')
-          response.body.should.have.property('id').eq('Invalid user id.')
-
-          done()
-        })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
     })
 
-    it('Try get non-existing user.', (done) => {
-      chai
-        .request(server)
-        .get('/api/users/000000000000000000000000')
-        .end((_, response) => {
-          response.should.have.status(404)
-          done()
-        })
+    it('Invalid user id.', async () => {
+      const response = await chai.request(server).get('/api/users/invalid_user_id')
+
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('id').eq('Invalid user id.')
     })
 
-    it('Get existing user.', (done) => {
-      chai
-        .request(server)
-        .get(`/api/users/${testUser.id}`)
-        .end((_, response) => {
-          response.should.have.status(200)
+    it('Try get non-existing user.', async () => {
+      const response = await chai.request(server).get('/api/users/000000000000000000000000')
+      response.should.have.status(404)
+    })
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('id').eq(testUser.id)
-          response.body.should.have.property('username').eq(testUser.username)
-          response.body.should.have.property('likes').eq(0)
+    it('Get existing user.', async () => {
+      const qwerty = new User({ username: 'qwerty', password: 'password' })
+      await qwerty.save()
 
-          done()
-        })
+      const response = await chai.request(server).get(`/api/users/${qwerty._id.toString()}`)
+
+      response.should.have.status(200)
+      response.body.should.be.a('object')
+      response.body.should.have.property('id').eq(qwerty._id.toString())
+      response.body.should.have.property('username').eq(qwerty.username)
+      response.body.should.have.property('likes').eq(0)
     })
   })
 
   describe('PUT: /api/users/{id} - Update specific user.', () => {
-    it('Invalid user id.', (done) => {
-      chai
+    let qwerty
+    let token
+
+    before(async () => {
+      qwerty = new User({ username: 'qwerty', password: 'password' })
+      await qwerty.save()
+
+      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
+    })
+
+    it('Invalid user id.', async () => {
+      const response = await chai
         .request(server)
         .put('/api/users/invalid_user_id')
-        .set('Authorization', `Bearer ${token()}`)
-        .end((_, response) => {
-          response.should.have.status(400)
+        .set('Authorization', `Bearer ${token}`)
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('id').eq('Invalid user id.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('id').eq('Invalid user id.')
     })
 
-    it('No user data.', (done) => {
-      chai
+    it('No user data.', async () => {
+      const response = await chai
         .request(server)
-        .put(`/api/users/${testUser.id}`)
-        .set('Authorization', `Bearer ${token()}`)
+        .put(`/api/users/${qwerty._id.toString()}`)
+        .set('Authorization', `Bearer ${token}`)
         .send({})
-        .end((_, response) => {
-          response.should.have.status(400)
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('username').eq('Username is required.')
-          response.body.should.have.property('password').eq('Password is required.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('username').eq('Username is required.')
+      response.body.should.have.property('password').eq('Password is required.')
     })
 
-    it('Invalid user data (long username & short password).', (done) => {
-      chai
+    it('Invalid user data (long username & short password).', async () => {
+      const response = await chai
         .request(server)
-        .put(`/api/users/${testUser.id}`)
-        .set('Authorization', `Bearer ${token()}`)
+        .put(`/api/users/${qwerty._id.toString()}`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ username: 'ridiculously long username', password: '1234' })
-        .end((_, response) => {
-          response.should.have.status(400)
 
-          response.body.should.be.a('object')
-          response.body.should.have
-            .property('username')
-            .eq('Username must be at least 6 and at most 20 characters long.')
-          response.body.should.have
-            .property('password')
-            .eq('Password must be at least 6 and at most 20 characters long.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('username').eq('Username must be at least 6 and at most 20 characters long.')
+      response.body.should.have.property('password').eq('Password must be at least 6 and at most 20 characters long.')
     })
 
-    it('Valid user data.', (done) => {
-      chai
+    it('Valid user data.', async () => {
+      const updatedUserData = { username: `${qwerty.username} (upd)`, password: `${qwerty.password} (upd)` }
+      const response = await chai
         .request(server)
-        .put(`/api/users/${testUser.id}`)
-        .set('Authorization', `Bearer ${token()}`)
-        .send({ username: `${testUser.username} (upd)`, password: testUser.password })
-        .end((_updateErr, updateResponse) => {
-          updateResponse.should.have.status(200)
+        .put(`/api/users/${qwerty._id.toString()}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(updatedUserData)
 
-          chai
-            .request(server)
-            .get(`/api/users/${testUser.id}`)
-            .end((_getErr, getResponse) => {
-              getResponse.should.have.status(200)
+      const updatedQwerty = await User.findById(qwerty._id)
 
-              getResponse.body.should.be.a('object')
-              getResponse.body.should.have.property('id').eq(testUser.id)
-              getResponse.body.should.have.property('username').eq(`${testUser.username} (upd)`)
-              getResponse.body.should.have.property('likes').eq(0)
-
-              done()
-            })
-        })
+      response.should.have.status(200)
+      updatedQwerty.should.have.property('username').eq(updatedUserData.username)
+      updatedQwerty.should.have.property('password').eq(updatedUserData.password)
     })
   })
 
   describe('DELETE: /api/users/{id} - Delete specific user.', () => {
-    it('Invalid user id.', (done) => {
-      chai
+    let qwerty
+    let token
+
+    before(async () => {
+      qwerty = new User({ username: 'qwerty', password: 'password' })
+      await qwerty.save()
+
+      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+    })
+    after(() => {
+      return dbConnection.db.dropCollection('users')
+    })
+
+    it('Invalid user id.', async () => {
+      const response = await chai
         .request(server)
         .delete('/api/users/invalid_user_id')
-        .set('Authorization', `Bearer ${token()}`)
-        .end((_, response) => {
-          response.should.have.status(400)
+        .set('Authorization', `Bearer ${token}`)
 
-          response.body.should.be.a('object')
-          response.body.should.have.property('id').eq('Invalid user id.')
-
-          done()
-        })
+      response.should.have.status(400)
+      response.body.should.be.a('object')
+      response.body.should.have.property('id').eq('Invalid user id.')
     })
 
-    it('Try delete non-existing user.', (done) => {
-      chai
+    it('Try delete non-existing user.', async () => {
+      const response = await chai
         .request(server)
         .delete('/api/users/000000000000000000000000')
-        .set('Authorization', `Bearer ${token()}`)
-        .end((_, response) => {
-          response.should.have.status(404)
-          done()
-        })
+        .set('Authorization', `Bearer ${token}`)
+
+      response.should.have.status(404)
     })
 
-    it('Delete existing user.', (done) => {
-      chai
+    it('Delete existing user.', async () => {
+      const response = await chai
         .request(server)
-        .delete(`/api/users/${testUser.id}`)
-        .set('Authorization', `Bearer ${token()}`)
-        .end((_, response) => {
-          response.should.have.status(200)
-          done()
-        })
+        .delete(`/api/users/${qwerty._id.toString(0)}`)
+        .set('Authorization', `Bearer ${token}`)
+
+      response.should.have.status(200)
+
+      const qwertyCount = await User.countDocuments({ _id: qwerty._id })
+      qwertyCount.should.be.eq(0)
     })
   })
 })
