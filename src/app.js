@@ -2,7 +2,7 @@ const express = require('express')
 const responseTime = require('response-time')
 const swaggerUi = require('swagger-ui-express')
 
-const routes = require('./routes')
+const features = require('./features')
 
 const configureApp = ({ swaggerSpec }) => {
   const app = express()
@@ -23,9 +23,9 @@ const configureApp = ({ swaggerSpec }) => {
 
   // configure routes
   app.use('/api/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
-  app.use('/api/auth', routes.auth)
-  app.use('/api/users/:userId/profile', routes.profile)
-  app.use('/api/users', routes.user)
+  app.use('/api/auth', features.auth)
+  app.use('/api/users/:userId/profile', features.profile)
+  app.use('/api/users', features.users)
 
   // register error handlers
   app.use((_err, _req, res, _next) => {

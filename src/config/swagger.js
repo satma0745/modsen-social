@@ -23,7 +23,7 @@ const createSpec = () => {
   const options = {
     swaggerDefinition,
     // Paths to files containing OpenAPI definitions
-    apis: ['src/routes/**/*.js'],
+    apis: ['src/features/**/controller.js'],
   }
 
   return swaggerJSDoc(options)
