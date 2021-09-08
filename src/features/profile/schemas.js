@@ -1,60 +1,36 @@
 const { checkSchema } = require('express-validator')
 const { validObjectId, toObjectId, ofType } = require('../utils/schema')
 
-const getUserProfileSchema = checkSchema({
-  userId: {
-    in: 'params',
-    notEmpty: true,
-    errorMessage: 'User id is required.',
-    custom: {
-      options: validObjectId('Invalid user id.'),
-    },
-    customSanitizer: {
-      options: toObjectId,
+const shared = {
+  params: {
+    userId: {
+      in: 'params',
+      notEmpty: true,
+      errorMessage: 'User id is required.',
+      custom: {
+        options: validObjectId('Invalid user id.'),
+      },
+      customSanitizer: {
+        options: toObjectId,
+      },
     },
   },
+}
+
+const getUserProfileSchema = checkSchema({
+  userId: shared.params.userId,
 })
 
 const getFansSchema = checkSchema({
-  userId: {
-    in: 'params',
-    notEmpty: true,
-    errorMessage: 'User id is required.',
-    custom: {
-      options: validObjectId('Invalid user id.'),
-    },
-    customSanitizer: {
-      options: toObjectId,
-    },
-  },
+  userId: shared.params.userId,
 })
 
 const getFavoritesSchema = checkSchema({
-  userId: {
-    in: 'params',
-    notEmpty: true,
-    errorMessage: 'User id is required.',
-    custom: {
-      options: validObjectId('Invalid user id.'),
-    },
-    customSanitizer: {
-      options: toObjectId,
-    },
-  },
+  userId: shared.params.userId,
 })
 
 const updateUserProfileSchema = checkSchema({
-  userId: {
-    in: 'params',
-    notEmpty: true,
-    errorMessage: 'User id is required.',
-    custom: {
-      options: validObjectId('Invalid user id.'),
-    },
-    customSanitizer: {
-      options: toObjectId,
-    },
-  },
+  userId: shared.params.userId,
   headline: {
     in: 'body',
     custom: {
@@ -119,31 +95,11 @@ const updateUserProfileSchema = checkSchema({
 })
 
 const likeProfileSchema = checkSchema({
-  userId: {
-    in: 'params',
-    notEmpty: true,
-    errorMessage: 'User id is required.',
-    custom: {
-      options: validObjectId('Invalid user id.'),
-    },
-    customSanitizer: {
-      options: toObjectId,
-    },
-  },
+  userId: shared.params.userId,
 })
 
 const unlikeProfileSchema = checkSchema({
-  userId: {
-    in: 'params',
-    notEmpty: true,
-    errorMessage: 'User id is required.',
-    custom: {
-      options: validObjectId('Invalid user id.'),
-    },
-    customSanitizer: {
-      options: toObjectId,
-    },
-  },
+  userId: shared.params.userId,
 })
 
 module.exports = {
