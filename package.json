@@ -1,9 +1,9 @@
 {
   "scripts": {
-    "start": "SET \"MODSEN_SOCIAL_ENV=development\" && node src/index.js",
-    "test": "SET \"MODSEN_SOCIAL_ENV=testing\" && mocha 'src/tests/**/*.test.js'"
+    "start": "cross-env MODSEN_SOCIAL_ENV=development node src/index.js",
+    "test": "cross-env MODSEN_SOCIAL_ENV=testing mocha 'src/tests/**/*.test.js'"
   },
-  "version": "0.0.20",
+  "version": "0.0.21",
   "dependencies": {
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
@@ -17,6 +17,7 @@
   "devDependencies": {
     "chai": "^4.3.4",
     "chai-http": "^4.3.0",
+    "cross-env": "^7.0.3",
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^8.3.0",
