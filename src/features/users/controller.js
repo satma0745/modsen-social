@@ -1,8 +1,11 @@
 const { Router } = require('express')
+const asyncHandler = require('express-async-handler')
+
 const { jwtAuth, validateWith } = require('../utils/controller')
-const { getAllUsers, getSingleUser, registerNewUser, updateUser, deleteUser } = require('./service')
-const { getSingleUserSchema, registerNewUserSchema, updateUserSchema, deleteUserSchema } = require('./schemas')
+
 const { toUserDto, toUserDtos } = require('./dtos')
+const { getSingleUserSchema, registerNewUserSchema, updateUserSchema, deleteUserSchema } = require('./schemas')
+const { getAllUsers, getSingleUser, registerNewUser, updateUser, deleteUser } = require('./service')
 
 const router = Router()
 
@@ -37,17 +40,16 @@ const router = Router()
  *                     type: number
  *                     example: 1
  */
-router.get('/', async (req, res, next) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const result = await getAllUsers()
     if (result.success) {
       const userDtos = toUserDtos(result.payload)
       res.status(200).json(userDtos)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -99,8 +101,10 @@ router.get('/', async (req, res, next) => {
  *       404:
  *         description: User with provided id does not exist.
  */
-router.get('/:id', validateWith(getSingleUserSchema), async (req, res, next) => {
-  try {
+router.get(
+  '/:id',
+  validateWith(getSingleUserSchema),
+  asyncHandler(async (req, res) => {
     const userId = req.params.id
     const result = await getSingleUser(userId)
 
@@ -114,10 +118,8 @@ router.get('/:id', validateWith(getSingleUserSchema), async (req, res, next) => 
       const userDto = toUserDto(result.payload)
       res.status(200).json(userDto)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -168,8 +170,10 @@ router.get('/:id', validateWith(getSingleUserSchema), async (req, res, next) => 
  *                   nullable: true
  *                   example: Password is required.
  */
-router.post('/', validateWith(registerNewUserSchema), async (req, res, next) => {
-  try {
+router.post(
+  '/',
+  validateWith(registerNewUserSchema),
+  asyncHandler(async (req, res) => {
     const result = await registerNewUser(req.body)
 
     if (!result.success && result.validationErrors) {
@@ -179,10 +183,8 @@ router.post('/', validateWith(registerNewUserSchema), async (req, res, next) => 
 
     const userId = result.payload
     res.status(201).json(userId)
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -247,8 +249,11 @@ router.post('/', validateWith(registerNewUserSchema), async (req, res, next) => 
  *       404:
  *         description: User with provided id does not exist.
  */
-router.put('/:id', validateWith(updateUserSchema), jwtAuth, async (req, res, next) => {
-  try {
+router.put(
+  '/:id',
+  validateWith(updateUserSchema),
+  jwtAuth,
+  asyncHandler(async (req, res) => {
     const result = await updateUser({ requesterId: req.user.id, userId: req.params.id, ...req.body })
 
     if (!result.success && result.validationErrors) {
@@ -267,10 +272,8 @@ router.put('/:id', validateWith(updateUserSchema), jwtAuth, async (req, res, nex
     if (result.success) {
       res.sendStatus(200)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -310,8 +313,11 @@ router.put('/:id', validateWith(updateUserSchema), jwtAuth, async (req, res, nex
  *       404:
  *         description: User with provided id does not exist.
  */
-router.delete('/:id', validateWith(deleteUserSchema), jwtAuth, async (req, res, next) => {
-  try {
+router.delete(
+  '/:id',
+  validateWith(deleteUserSchema),
+  jwtAuth,
+  asyncHandler(async (req, res) => {
     const result = await deleteUser({ requesterId: req.user.id, userId: req.params.id })
 
     if (!result.success && result.validationErrors) {
@@ -330,9 +336,7 @@ router.delete('/:id', validateWith(deleteUserSchema), jwtAuth, async (req, res, 
     if (result.success) {
       res.sendStatus(200)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 module.exports = router

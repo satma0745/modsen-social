@@ -1,9 +1,11 @@
 const { Router } = require('express')
+const asyncHandler = require('express-async-handler')
+
 const { jwtAuth, validateWith } = require('../utils/controller')
 
-const { generateToken, getUserInfo } = require('./service')
-const { generateTokenSchema } = require('./schemas')
 const { toUserDto } = require('./dtos')
+const { generateTokenSchema } = require('./schemas')
+const { generateToken, getUserInfo } = require('./service')
 
 const router = Router()
 
@@ -39,8 +41,10 @@ const router = Router()
  *       401:
  *         description: Unauthorized access attempt.
  */
-router.get('/me', jwtAuth, async (req, res, next) => {
-  try {
+router.get(
+  '/me',
+  jwtAuth,
+  asyncHandler(async (req, res) => {
     const userId = req.user.id
     const result = await getUserInfo(userId)
 
@@ -48,10 +52,8 @@ router.get('/me', jwtAuth, async (req, res, next) => {
       const userDto = toUserDto(result.payload)
       res.status(200).json(userDto)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -98,8 +100,10 @@ router.get('/me', jwtAuth, async (req, res, next) => {
  *                   nullable: true
  *                   example: Incorrect password provided.
  */
-router.post('/token', validateWith(generateTokenSchema), async (req, res, next) => {
-  try {
+router.post(
+  '/token',
+  validateWith(generateTokenSchema),
+  asyncHandler(async (req, res) => {
     const result = await generateToken(req.body)
 
     if (!result.success && result.validationErrors) {
@@ -109,9 +113,7 @@ router.post('/token', validateWith(generateTokenSchema), async (req, res, next) 
 
     const authToken = result.payload
     res.status(200).json(authToken)
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 module.exports = router

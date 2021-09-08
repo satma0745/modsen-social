@@ -1,6 +1,9 @@
 const { Router } = require('express')
+const asyncHandler = require('express-async-handler')
+
 const { jwtAuth, validateWith } = require('../utils/controller')
-const { getUserProfile, getFans, getFavorites, updateUserProfile, likeProfile, unlikeProfile } = require('./service')
+
+const { toUserDtos, toProfileDto } = require('./dtos')
 const {
   getUserProfileSchema,
   getFansSchema,
@@ -9,7 +12,7 @@ const {
   likeProfileSchema,
   unlikeProfileSchema,
 } = require('./schemas')
-const { toUserDtos, toProfileDto } = require('./dtos')
+const { getUserProfile, getFans, getFavorites, updateUserProfile, likeProfile, unlikeProfile } = require('./service')
 
 const router = Router({ mergeParams: true })
 
@@ -73,8 +76,10 @@ const router = Router({ mergeParams: true })
  *       404:
  *         description: User with provided id does not exist.
  */
-router.get('/', validateWith(getUserProfileSchema), async (req, res, next) => {
-  try {
+router.get(
+  '/',
+  validateWith(getUserProfileSchema),
+  asyncHandler(async (req, res) => {
     const result = await getUserProfile(req.params.userId)
 
     if (!result.success && result.notFound) {
@@ -87,10 +92,8 @@ router.get('/', validateWith(getUserProfileSchema), async (req, res, next) => {
       const userDto = toProfileDto(result.payload)
       res.status(200).json(userDto)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -144,8 +147,10 @@ router.get('/', validateWith(getUserProfileSchema), async (req, res, next) => {
  *       404:
  *         description: User with provided id does not exist.
  */
-router.get('/fans', validateWith(getFansSchema), async (req, res, next) => {
-  try {
+router.get(
+  '/fans',
+  validateWith(getFansSchema),
+  asyncHandler(async (req, res) => {
     const result = await getFans(req.params.userId)
 
     if (!result.success && result.notFound) {
@@ -158,10 +163,8 @@ router.get('/fans', validateWith(getFansSchema), async (req, res, next) => {
       const fanDtos = toUserDtos(result.payload)
       res.status(200).json(fanDtos)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -215,8 +218,10 @@ router.get('/fans', validateWith(getFansSchema), async (req, res, next) => {
  *       404:
  *         description: User with provided id does not exist.
  */
-router.get('/favorites', validateWith(getFavoritesSchema), async (req, res, next) => {
-  try {
+router.get(
+  '/favorites',
+  validateWith(getFavoritesSchema),
+  asyncHandler(async (req, res) => {
     const result = await getFavorites(req.params.userId)
 
     if (!result.success && result.notFound) {
@@ -229,10 +234,8 @@ router.get('/favorites', validateWith(getFavoritesSchema), async (req, res, next
       const favoriteDtos = toUserDtos(result.payload)
       res.status(200).json(favoriteDtos)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -314,8 +317,11 @@ router.get('/favorites', validateWith(getFavoritesSchema), async (req, res, next
  *       404:
  *         description: User with provided id does not exist.
  */
-router.put('/', validateWith(updateUserProfileSchema), jwtAuth, async (req, res, next) => {
-  try {
+router.put(
+  '/',
+  validateWith(updateUserProfileSchema),
+  jwtAuth,
+  asyncHandler(async (req, res) => {
     const result = await updateUserProfile({ requesterId: req.user.id, userId: req.params.userId, ...req.body })
 
     if (!result.success && result.notFound) {
@@ -331,10 +337,8 @@ router.put('/', validateWith(updateUserProfileSchema), jwtAuth, async (req, res,
     if (result.success) {
       res.sendStatus(200)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -375,8 +379,11 @@ router.put('/', validateWith(updateUserProfileSchema), jwtAuth, async (req, res,
  *       404:
  *         description: User with provided id does not exist.
  */
-router.post('/like', validateWith(likeProfileSchema), jwtAuth, async (req, res, next) => {
-  try {
+router.post(
+  '/like',
+  validateWith(likeProfileSchema),
+  jwtAuth,
+  asyncHandler(async (req, res) => {
     const result = await likeProfile({ requesterId: req.user.id, profileOwnerId: req.params.userId })
 
     if (!result.success && result.notFound) {
@@ -393,10 +400,8 @@ router.post('/like', validateWith(likeProfileSchema), jwtAuth, async (req, res, 
     if (result.success) {
       res.sendStatus(200)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 /**
  * @swagger
@@ -437,8 +442,11 @@ router.post('/like', validateWith(likeProfileSchema), jwtAuth, async (req, res, 
  *       404:
  *         description: User with provided id does not exist.
  */
-router.post('/unlike', validateWith(unlikeProfileSchema), jwtAuth, async (req, res, next) => {
-  try {
+router.post(
+  '/unlike',
+  validateWith(unlikeProfileSchema),
+  jwtAuth,
+  asyncHandler(async (req, res) => {
     const result = await unlikeProfile({ requesterId: req.user.id, profileOwnerId: req.params.userId })
 
     if (!result.success && result.notFound) {
@@ -455,9 +463,7 @@ router.post('/unlike', validateWith(unlikeProfileSchema), jwtAuth, async (req, r
     if (result.success) {
       res.sendStatus(200)
     }
-  } catch (err) {
-    next(err)
-  }
-})
+  })
+)
 
 module.exports = router
