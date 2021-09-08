@@ -23,20 +23,24 @@ const jwtAuth = async (req, res, next) => {
 }
 
 const validateWith = (validationSchema) => async (req, res, next) => {
-  await validationSchema.run(req)
-  const validationErrors = validationResult(req)
+  try {
+    await validationSchema.run(req)
+    const validationErrors = validationResult(req)
 
-  if (!validationErrors.isEmpty()) {
-    const response = {}
-    validationErrors.array().forEach(({ msg, param }) => {
-      if (!(param in response)) {
-        response[param] = msg
-      }
-    })
+    if (!validationErrors.isEmpty()) {
+      const response = {}
+      validationErrors.array().forEach(({ msg, param }) => {
+        if (!(param in response)) {
+          response[param] = msg
+        }
+      })
 
-    res.status(400).json(response)
-  } else {
-    next()
+      res.status(400).json(response)
+    } else {
+      next()
+    }
+  } catch (err) {
+    next(err)
   }
 }
 

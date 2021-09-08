@@ -39,13 +39,17 @@ const router = Router()
  *       401:
  *         description: Unauthorized access attempt.
  */
-router.get('/me', jwtAuth, async (req, res) => {
-  const userId = req.user.id
-  const result = await getUserInfo(userId)
+router.get('/me', jwtAuth, async (req, res, next) => {
+  try {
+    const userId = req.user.id
+    const result = await getUserInfo(userId)
 
-  if (result.success) {
-    const userDto = toUserDto(result.payload)
-    res.status(200).json(userDto)
+    if (result.success) {
+      const userDto = toUserDto(result.payload)
+      res.status(200).json(userDto)
+    }
+  } catch (err) {
+    next(err)
   }
 })
 
@@ -94,16 +98,20 @@ router.get('/me', jwtAuth, async (req, res) => {
  *                   nullable: true
  *                   example: Incorrect password provided.
  */
-router.post('/token', validateWith(generateTokenSchema), async (req, res) => {
-  const result = await generateToken(req.body)
+router.post('/token', validateWith(generateTokenSchema), async (req, res, next) => {
+  try {
+    const result = await generateToken(req.body)
 
-  if (!result.success && result.validationErrors) {
-    res.status(400).json(result.validationErrors)
-    return
+    if (!result.success && result.validationErrors) {
+      res.status(400).json(result.validationErrors)
+      return
+    }
+
+    const authToken = result.payload
+    res.status(200).json(authToken)
+  } catch (err) {
+    next(err)
   }
-
-  const authToken = result.payload
-  res.status(200).json(authToken)
 })
 
 module.exports = router

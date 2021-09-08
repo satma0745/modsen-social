@@ -37,11 +37,15 @@ const router = Router()
  *                     type: number
  *                     example: 1
  */
-router.get('/', async (req, res) => {
-  const result = await getAllUsers()
-  if (result.success) {
-    const userDtos = toUserDtos(result.payload)
-    res.status(200).json(userDtos)
+router.get('/', async (req, res, next) => {
+  try {
+    const result = await getAllUsers()
+    if (result.success) {
+      const userDtos = toUserDtos(result.payload)
+      res.status(200).json(userDtos)
+    }
+  } catch (err) {
+    next(err)
   }
 })
 
@@ -95,19 +99,23 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: User with provided id does not exist.
  */
-router.get('/:id', validateWith(getSingleUserSchema), async (req, res) => {
-  const userId = req.params.id
-  const result = await getSingleUser(userId)
+router.get('/:id', validateWith(getSingleUserSchema), async (req, res, next) => {
+  try {
+    const userId = req.params.id
+    const result = await getSingleUser(userId)
 
-  if (!result.success && result.notFound) {
-    const message = typeof result.payload === 'string' ? result.payload : undefined
-    res.status(404).json(message)
-    return
-  }
+    if (!result.success && result.notFound) {
+      const message = typeof result.payload === 'string' ? result.payload : undefined
+      res.status(404).json(message)
+      return
+    }
 
-  if (result.success) {
-    const userDto = toUserDto(result.payload)
-    res.status(200).json(userDto)
+    if (result.success) {
+      const userDto = toUserDto(result.payload)
+      res.status(200).json(userDto)
+    }
+  } catch (err) {
+    next(err)
   }
 })
 
@@ -160,16 +168,20 @@ router.get('/:id', validateWith(getSingleUserSchema), async (req, res) => {
  *                   nullable: true
  *                   example: Password is required.
  */
-router.post('/', validateWith(registerNewUserSchema), async (req, res) => {
-  const result = await registerNewUser(req.body)
+router.post('/', validateWith(registerNewUserSchema), async (req, res, next) => {
+  try {
+    const result = await registerNewUser(req.body)
 
-  if (!result.success && result.validationErrors) {
-    res.status(400).json(result.validationErrors)
-    return
+    if (!result.success && result.validationErrors) {
+      res.status(400).json(result.validationErrors)
+      return
+    }
+
+    const userId = result.payload
+    res.status(201).json(userId)
+  } catch (err) {
+    next(err)
   }
-
-  const userId = result.payload
-  res.status(201).json(userId)
 })
 
 /**
@@ -235,24 +247,28 @@ router.post('/', validateWith(registerNewUserSchema), async (req, res) => {
  *       404:
  *         description: User with provided id does not exist.
  */
-router.put('/:id', validateWith(updateUserSchema), jwtAuth, async (req, res) => {
-  const result = await updateUser({ requesterId: req.user.id, userId: req.params.id, ...req.body })
+router.put('/:id', validateWith(updateUserSchema), jwtAuth, async (req, res, next) => {
+  try {
+    const result = await updateUser({ requesterId: req.user.id, userId: req.params.id, ...req.body })
 
-  if (!result.success && result.validationErrors) {
-    res.status(400).json(result.validationErrors)
-    return
-  }
-  if (!result.success && result.accessViolation) {
-    res.sendStatus(403)
-    return
-  }
-  if (!result.success && result.notFound) {
-    res.sendStatus(404)
-    return
-  }
+    if (!result.success && result.validationErrors) {
+      res.status(400).json(result.validationErrors)
+      return
+    }
+    if (!result.success && result.accessViolation) {
+      res.sendStatus(403)
+      return
+    }
+    if (!result.success && result.notFound) {
+      res.sendStatus(404)
+      return
+    }
 
-  if (result.success) {
-    res.sendStatus(200)
+    if (result.success) {
+      res.sendStatus(200)
+    }
+  } catch (err) {
+    next(err)
   }
 })
 
@@ -294,24 +310,28 @@ router.put('/:id', validateWith(updateUserSchema), jwtAuth, async (req, res) => 
  *       404:
  *         description: User with provided id does not exist.
  */
-router.delete('/:id', validateWith(deleteUserSchema), jwtAuth, async (req, res) => {
-  const result = await deleteUser({ requesterId: req.user.id, userId: req.params.id })
+router.delete('/:id', validateWith(deleteUserSchema), jwtAuth, async (req, res, next) => {
+  try {
+    const result = await deleteUser({ requesterId: req.user.id, userId: req.params.id })
 
-  if (!result.success && result.validationErrors) {
-    res.status(400).json(result.validationErrors)
-    return
-  }
-  if (!result.success && result.accessViolation) {
-    res.sendStatus(403)
-    return
-  }
-  if (!result.success && result.notFound) {
-    res.sendStatus(404)
-    return
-  }
+    if (!result.success && result.validationErrors) {
+      res.status(400).json(result.validationErrors)
+      return
+    }
+    if (!result.success && result.accessViolation) {
+      res.sendStatus(403)
+      return
+    }
+    if (!result.success && result.notFound) {
+      res.sendStatus(404)
+      return
+    }
 
-  if (result.success) {
-    res.sendStatus(200)
+    if (result.success) {
+      res.sendStatus(200)
+    }
+  } catch (err) {
+    next(err)
   }
 })
 
