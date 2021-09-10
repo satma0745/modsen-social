@@ -1,4 +1,4 @@
-const { User } = require('../../models')
+const { User, RefreshTokens } = require('../../models')
 const { success, notFound, validationError, accessViolation } = require('../utils/service')
 
 const getAllUsers = async () => {
@@ -28,7 +28,8 @@ const registerNewUser = async ({ username, password }) => {
 }
 
 const updateUser = async ({ requesterId, userId, username, password }) => {
-  if (!(await User.existsWithId(userId))) {
+  const user = await User.findById(userId)
+  if (user === null) {
     return notFound('User with provided id does not exist.')
   }
 
@@ -40,7 +41,15 @@ const updateUser = async ({ requesterId, userId, username, password }) => {
     return accessViolation()
   }
 
-  await User.findByIdAndUpdate(userId, { username, password }, { runValidators: true })
+  // revoke refresh tokens if user credentials have changed
+  if (username !== user.username || password !== user.password) {
+    await RefreshTokens.revokeUserTokens(user._id)
+  }
+
+  user.username = username
+  user.password = password
+  await user.save()
+
   return success()
 }
 
@@ -54,6 +63,7 @@ const deleteUser = async ({ requesterId, userId }) => {
   }
 
   await User.updateMany({}, { $pull: { 'profile.liked': userId, 'profile.likedBy': userId } })
+  await RefreshTokens.revokeUserTokens(userId)
   await User.findByIdAndDelete(userId)
 
   return success()

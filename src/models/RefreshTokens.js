@@ -21,6 +21,15 @@ userRefreshTokensSchema.statics.findByUserIdOrCreate = async function findByUser
   return userRefreshTokens === null ? new this({ _id: userId }) : userRefreshTokens
 }
 
+userRefreshTokensSchema.statics.revokeUserTokens = async function revokeUserTokens(userId) {
+  const userRefreshTokens = await this.findByUserId(userId)
+
+  if (userRefreshTokens !== null) {
+    userRefreshTokens.tokens = []
+    await userRefreshTokens.save()
+  }
+}
+
 const RefreshTokens = model('RefreshTokens', userRefreshTokensSchema)
 
 module.exports = RefreshTokens

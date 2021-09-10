@@ -1,8 +1,9 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const { sign } = require('jsonwebtoken')
+const { ObjectId } = require('mongoose').Types
 
-const { User } = require('../models')
+const { User, RefreshTokens } = require('../models')
 const serverPromise = require('../server')
 
 chai.should()
@@ -197,6 +198,11 @@ describe('User CRUD', () => {
     })
 
     it('Valid user data.', async () => {
+      // issue refresh token for qwerty
+      let qwertyRefreshTokens = await RefreshTokens.findByUserIdOrCreate(qwerty._id)
+      qwertyRefreshTokens.tokens.push(new ObjectId())
+      await qwertyRefreshTokens.save()
+
       const updatedUserData = { username: `${qwerty.username} (upd)`, password: `${qwerty.password} (upd)` }
       const response = await chai
         .request(server)
@@ -204,11 +210,16 @@ describe('User CRUD', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(updatedUserData)
 
-      const updatedQwerty = await User.findById(qwerty._id)
-
       response.should.have.status(200)
+
+      // check if changes were saved to the database
+      const updatedQwerty = await User.findById(qwerty._id)
       updatedQwerty.should.have.property('username').eq(updatedUserData.username)
       updatedQwerty.should.have.property('password').eq(updatedUserData.password)
+
+      // check if all refresh tokens are revoked
+      qwertyRefreshTokens = await RefreshTokens.findByUserId(qwerty._id)
+      qwertyRefreshTokens.tokens.should.have.length(0)
     })
   })
 
@@ -247,6 +258,11 @@ describe('User CRUD', () => {
     })
 
     it('Delete existing user.', async () => {
+      // issue refresh token for qwerty
+      let qwertyRefreshTokens = await RefreshTokens.findByUserIdOrCreate(qwerty._id)
+      qwertyRefreshTokens.tokens.push(new ObjectId())
+      await qwertyRefreshTokens.save()
+
       const response = await chai
         .request(server)
         .delete(`/api/users/${qwerty._id.toString(0)}`)
@@ -254,8 +270,13 @@ describe('User CRUD', () => {
 
       response.should.have.status(200)
 
+      // check if user was deleted from the database
       const qwertyCount = await User.countDocuments({ _id: qwerty._id })
       qwertyCount.should.be.eq(0)
+
+      // check if all refresh tokens are revoked
+      qwertyRefreshTokens = await RefreshTokens.findByUserId(qwerty._id)
+      qwertyRefreshTokens.tokens.should.have.length(0)
     })
 
     it('Check if likes are removed on delete.', async () => {
