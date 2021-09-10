@@ -1,3 +1,4 @@
+const RefreshTokens = require('./RefreshTokens')
 const User = require('./User')
 
-module.exports = { User }
+module.exports = { RefreshTokens, User }

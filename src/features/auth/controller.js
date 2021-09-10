@@ -4,8 +4,8 @@ const asyncHandler = require('express-async-handler')
 const { jwtAuth, validateWith } = require('../utils/controller')
 
 const { toUserDto } = require('./dtos')
-const { generateTokenSchema } = require('./schemas')
-const { generateToken, getUserInfo } = require('./service')
+const { generateTokenPairSchema, refreshTokenPairSchema } = require('./schemas')
+const { generateTokenPair, refreshTokenPair, getUserInfo } = require('./service')
 
 const router = Router()
 
@@ -59,7 +59,7 @@ router.get(
  * @swagger
  * /api/auth/token:
  *   post:
- *     summary: Generate authorization token for specified user credentials.
+ *     summary: Generate token pair for specified user credentials.
  *     tags:
  *       - Auth
  *     requestBody:
@@ -81,9 +81,16 @@ router.get(
  *         content:
  *           application/json:
  *             schema:
- *               type: string
- *               description: Authorization token
- *               example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.e30.yXvILkvUUCBqAFlAv6wQ1Q-QRAjfe3eSosO949U73Vo
+ *               type: object
+ *               properties:
+ *                 access:
+ *                   type: string
+ *                   description: Access token
+ *                   example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.e30.yXvILkvUUCBqAFlAv6wQ1Q-QRAjfe3eSosO949U73Vo
+ *                 refresh:
+ *                   type: string
+ *                   description: Refresh token
+ *                   example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.e30.yXvILkvUUCBqAFlAv6wQ1Q-QRAjfe3eSosO949U73Vo
  *       400:
  *         description: Validation errors occurred.
  *         content:
@@ -102,17 +109,82 @@ router.get(
  */
 router.post(
   '/token',
-  validateWith(generateTokenSchema),
+  validateWith(generateTokenPairSchema),
   asyncHandler(async (req, res) => {
-    const result = await generateToken(req.body)
+    const result = await generateTokenPair(req.body)
 
     if (!result.success && result.validationErrors) {
       res.status(400).json(result.validationErrors)
       return
     }
 
-    const authToken = result.payload
-    res.status(200).json(authToken)
+    const tokens = result.payload
+    res.status(200).json(tokens)
+  })
+)
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh token pair.
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refresh:
+ *                 type: string
+ *                 example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.e30.yXvILkvUUCBqAFlAv6wQ1Q-QRAjfe3eSosO949U73Vo
+ *     responses:
+ *       200:
+ *         description: Authorization token was generated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 access:
+ *                   type: string
+ *                   description: Access token
+ *                   example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.e30.yXvILkvUUCBqAFlAv6wQ1Q-QRAjfe3eSosO949U73Vo
+ *                 refresh:
+ *                   type: string
+ *                   description: Refresh token
+ *                   example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.e30.yXvILkvUUCBqAFlAv6wQ1Q-QRAjfe3eSosO949U73Vo
+ *       400:
+ *         description: Validation errors occurred.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 username:
+ *                   type: string
+ *                   nullable: true
+ *                   example: User with such username does not exist.
+ *                 password:
+ *                   type: string
+ *                   nullable: true
+ *                   example: Incorrect password provided.
+ */
+router.post(
+  '/refresh',
+  validateWith(refreshTokenPairSchema),
+  asyncHandler(async (req, res) => {
+    const result = await refreshTokenPair(req.body.refresh)
+
+    if (!result.success && result.unauthorized) {
+      res.status(401).json(result.unauthorized)
+      return
+    }
+
+    const tokens = result.payload
+    res.status(200).json(tokens)
   })
 )
 

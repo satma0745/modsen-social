@@ -13,6 +13,11 @@ const validationError = (errors) => ({
   validationErrors: errors,
 })
 
+const unauthorized = ({ access, refresh }) => ({
+  success: false,
+  unauthorized: { access, refresh },
+})
+
 const accessViolation = () => ({
   success: false,
   accessViolation: true,
@@ -23,4 +28,4 @@ const notFound = (message) => ({
   notFound: message ?? true,
 })
 
-module.exports = { success, conflict, validationError, accessViolation, notFound }
+module.exports = { success, conflict, validationError, unauthorized, accessViolation, notFound }
