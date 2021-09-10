@@ -12,7 +12,7 @@ const refreshTokenPair = async (refreshToken) => {
     const [userId, refreshTokenId] = payload.sub
 
     // check if refresh token is registered
-    const userRefreshTokens = await RefreshTokens.findById(userId)
+    const userRefreshTokens = await RefreshTokens.findByUserId(userId)
     if (userRefreshTokens === null) {
       return unauthorized({ refresh: true })
     }
@@ -48,7 +48,7 @@ const issueTokenPair = async ({ username, password }) => {
   const refreshTokenId = new ObjectId()
 
   // register issued refresh token
-  const userRefreshTokens = (await RefreshTokens.findById(user._id)) ?? new RefreshTokens({ _id: user._id })
+  const userRefreshTokens = await RefreshTokens.findByUserIdOrCreate(user._id)
   userRefreshTokens.tokens.push(refreshTokenId)
   await userRefreshTokens.save()
 

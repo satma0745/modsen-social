@@ -86,7 +86,7 @@ describe('Authentication & Authorization', () => {
       refreshTokenPayload.sub[1].should.be.a('string')
 
       // id of the issued refresh token should be saved to the database
-      const userRefreshTokens = await RefreshTokens.findById(qwerty._id)
+      const userRefreshTokens = await RefreshTokens.findByUserId(qwerty._id)
       const issuedRefreshTokens = userRefreshTokens.tokens
       issuedRefreshTokens.should.have.length(1)
       issuedRefreshTokens.map((tokenId) => tokenId.toString()).should.include(refreshTokenPayload.sub[1])
@@ -191,7 +191,7 @@ describe('Authentication & Authorization', () => {
       refreshTokenPayload.sub[1].should.be.a('string')
 
       // id of the issued refresh token should be saved to the database
-      qwertyRefreshTokens = await RefreshTokens.findById(qwerty._id)
+      qwertyRefreshTokens = await RefreshTokens.findByUserId(qwerty._id)
       const issuedRefreshTokens = qwertyRefreshTokens.tokens
       issuedRefreshTokens.should.have.length(1)
       issuedRefreshTokens.map((id) => id.toString()).should.include(refreshTokenPayload.sub[1])
