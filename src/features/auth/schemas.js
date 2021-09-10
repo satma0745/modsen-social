@@ -1,6 +1,6 @@
 const { checkSchema } = require('express-validator')
 
-const generateTokenPairSchema = checkSchema({
+const issueTokenPairSchema = checkSchema({
   username: {
     in: 'body',
     notEmpty: true,
@@ -21,4 +21,4 @@ const refreshTokenPairSchema = checkSchema({
   },
 })
 
-module.exports = { generateTokenPairSchema, refreshTokenPairSchema }
+module.exports = { issueTokenPairSchema, refreshTokenPairSchema }

@@ -1,15 +1,13 @@
-const { sign, verify } = require('jsonwebtoken')
+const { verify } = require('jsonwebtoken')
 const { ObjectId } = require('mongoose').Types
 
 const { User, RefreshTokens } = require('../../models')
 const { success, unauthorized, validationError } = require('../utils/service')
+const { generateTokenPair } = require('./token')
 
 const refreshTokenPair = async (refreshToken) => {
   try {
     const tokenSecret = process.env.TOKEN_SECRET
-    const accessTokenLifetime = process.env.ACCESS_TOKEN_LIFETIME
-    const refreshTokenLifetime = process.env.REFRESH_TOKEN_LIFETIME
-
     const payload = verify(refreshToken, tokenSecret)
     const [userId, refreshTokenId] = payload.sub
 
@@ -23,29 +21,21 @@ const refreshTokenPair = async (refreshToken) => {
       return unauthorized({ refresh: true })
     }
 
-    // revoke refresh token
+    // revoke old refresh token & register the new one
     const indexToRemove = userRefreshTokens.tokens.findIndex((userTokenId) => userTokenId.equals(refreshTokenId))
     userRefreshTokens.tokens.splice(indexToRemove, 1)
-
-    // register new refresh token
     const newRefreshTokenId = new ObjectId()
     userRefreshTokens.tokens.push(newRefreshTokenId)
-
     await userRefreshTokens.save()
 
-    // generate new token pair
-    const tokens = {
-      access: sign({ sub: userId }, tokenSecret, { expiresIn: accessTokenLifetime }),
-      refresh: sign({ sub: [userId, newRefreshTokenId] }, tokenSecret, { expiresIn: refreshTokenLifetime }),
-    }
-
+    const tokens = generateTokenPair({ userId, refreshTokenId: newRefreshTokenId.toString() })
     return success(tokens)
   } catch {
     return unauthorized({ refresh: true })
   }
 }
 
-const generateTokenPair = async ({ username, password }) => {
+const issueTokenPair = async ({ username, password }) => {
   if (!(await User.existsWithUsername(username))) {
     return validationError({ username: 'User with such username does not exist.' })
   }
@@ -57,20 +47,12 @@ const generateTokenPair = async ({ username, password }) => {
 
   const refreshTokenId = new ObjectId()
 
+  // register issued refresh token
   const userRefreshTokens = (await RefreshTokens.findById(user._id)) ?? new RefreshTokens({ _id: user._id })
   userRefreshTokens.tokens.push(refreshTokenId)
   await userRefreshTokens.save()
 
-  const userId = user._id.toString()
-  const tokenSecret = process.env.TOKEN_SECRET
-  const accessTokenLifetime = process.env.ACCESS_TOKEN_LIFETIME
-  const refreshTokenLifetime = process.env.REFRESH_TOKEN_LIFETIME
-
-  const tokens = {
-    access: sign({ sub: userId }, tokenSecret, { expiresIn: accessTokenLifetime }),
-    refresh: sign({ sub: [userId, refreshTokenId.toString()] }, tokenSecret, { expiresIn: refreshTokenLifetime }),
-  }
-
+  const tokens = generateTokenPair({ userId: user._id.toString(), refreshTokenId: refreshTokenId.toString() })
   return success(tokens)
 }
 
@@ -79,4 +61,4 @@ const getUserInfo = async (userId) => {
   return success(user)
 }
 
-module.exports = { generateTokenPair, refreshTokenPair, getUserInfo }
+module.exports = { issueTokenPair, refreshTokenPair, getUserInfo }

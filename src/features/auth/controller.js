@@ -4,8 +4,8 @@ const asyncHandler = require('express-async-handler')
 const { jwtAuth, validateWith } = require('../utils/controller')
 
 const { toUserDto } = require('./dtos')
-const { generateTokenPairSchema, refreshTokenPairSchema } = require('./schemas')
-const { generateTokenPair, refreshTokenPair, getUserInfo } = require('./service')
+const { issueTokenPairSchema, refreshTokenPairSchema } = require('./schemas')
+const { issueTokenPair, refreshTokenPair, getUserInfo } = require('./service')
 
 const router = Router()
 
@@ -109,9 +109,9 @@ router.get(
  */
 router.post(
   '/token',
-  validateWith(generateTokenPairSchema),
+  validateWith(issueTokenPairSchema),
   asyncHandler(async (req, res) => {
-    const result = await generateTokenPair(req.body)
+    const result = await issueTokenPair(req.body)
 
     if (!result.success && result.validationErrors) {
       res.status(400).json(result.validationErrors)
