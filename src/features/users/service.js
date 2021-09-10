@@ -43,7 +43,9 @@ const updateUser = async ({ requesterId, userId, username, password }) => {
 
   // revoke refresh tokens if user credentials have changed
   if (username !== user.username || password !== user.password) {
-    await RefreshTokens.revokeUserTokens(user._id)
+    const userRefreshTokens = await RefreshTokens.findByUserId(user._id)
+    userRefreshTokens?.revokeTokens()
+    await userRefreshTokens?.save()
   }
 
   user.username = username
@@ -63,7 +65,7 @@ const deleteUser = async ({ requesterId, userId }) => {
   }
 
   await User.updateMany({}, { $pull: { 'profile.liked': userId, 'profile.likedBy': userId } })
-  await RefreshTokens.revokeUserTokens(userId)
+  await RefreshTokens.findByUserIdAndDelete(userId)
   await User.findByIdAndDelete(userId)
 
   return success()

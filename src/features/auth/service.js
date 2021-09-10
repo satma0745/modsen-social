@@ -1,5 +1,4 @@
 const { verify } = require('jsonwebtoken')
-const { ObjectId } = require('mongoose').Types
 
 const { User, RefreshTokens } = require('../../models')
 const { success, unauthorized, validationError } = require('../utils/service')
@@ -11,21 +10,13 @@ const refreshTokenPair = async (refreshToken) => {
     const payload = verify(refreshToken, tokenSecret)
     const [userId, refreshTokenId] = payload.sub
 
-    // check if refresh token is registered
     const userRefreshTokens = await RefreshTokens.findByUserId(userId)
-    if (userRefreshTokens === null) {
-      return unauthorized({ refresh: true })
-    }
-    const userOwnsToken = userRefreshTokens.tokens.some((userTokenId) => userTokenId.equals(refreshTokenId))
-    if (!userOwnsToken) {
+    if (userRefreshTokens === null || !userRefreshTokens.ownsToken(refreshTokenId)) {
       return unauthorized({ refresh: true })
     }
 
-    // revoke old refresh token & register the new one
-    const indexToRemove = userRefreshTokens.tokens.findIndex((userTokenId) => userTokenId.equals(refreshTokenId))
-    userRefreshTokens.tokens.splice(indexToRemove, 1)
-    const newRefreshTokenId = new ObjectId()
-    userRefreshTokens.tokens.push(newRefreshTokenId)
+    userRefreshTokens.revokeToken(refreshTokenId)
+    const newRefreshTokenId = userRefreshTokens.addToken()
     await userRefreshTokens.save()
 
     const tokens = generateTokenPair({ userId, refreshTokenId: newRefreshTokenId.toString() })
@@ -36,20 +27,16 @@ const refreshTokenPair = async (refreshToken) => {
 }
 
 const issueTokenPair = async ({ username, password }) => {
-  if (!(await User.existsWithUsername(username))) {
+  const user = await User.findByUsername(username)
+  if (user === null) {
     return validationError({ username: 'User with such username does not exist.' })
   }
-
-  const user = await User.findByUsername(username)
   if (password !== user.password) {
     return validationError({ password: 'Incorrect password provided.' })
   }
 
-  const refreshTokenId = new ObjectId()
-
-  // register issued refresh token
   const userRefreshTokens = await RefreshTokens.findByUserIdOrCreate(user._id)
-  userRefreshTokens.tokens.push(refreshTokenId)
+  const refreshTokenId = userRefreshTokens.addToken()
   await userRefreshTokens.save()
 
   const tokens = generateTokenPair({ userId: user._id.toString(), refreshTokenId: refreshTokenId.toString() })

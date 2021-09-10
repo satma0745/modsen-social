@@ -1,12 +1,8 @@
-const {
-  model,
-  Schema,
-  SchemaTypes: { ObjectId },
-} = require('mongoose')
+const { model, Schema, Types, SchemaTypes } = require('mongoose')
 
 const userRefreshTokensSchema = new Schema({
   tokens: {
-    type: [ObjectId],
+    type: [SchemaTypes.ObjectId],
     required: true,
     default: [],
   },
@@ -21,13 +17,27 @@ userRefreshTokensSchema.statics.findByUserIdOrCreate = async function findByUser
   return userRefreshTokens === null ? new this({ _id: userId }) : userRefreshTokens
 }
 
-userRefreshTokensSchema.statics.revokeUserTokens = async function revokeUserTokens(userId) {
-  const userRefreshTokens = await this.findByUserId(userId)
+userRefreshTokensSchema.statics.findByUserIdAndDelete = function findByUserIdAndDelete(userId) {
+  return this.findOneAndDelete({ _id: userId })
+}
 
-  if (userRefreshTokens !== null) {
-    userRefreshTokens.tokens = []
-    await userRefreshTokens.save()
-  }
+userRefreshTokensSchema.methods.revokeTokens = function revokeTokens() {
+  this.tokens = []
+}
+
+userRefreshTokensSchema.methods.revokeToken = function revokeToken(tokenIdToRemove) {
+  const indexToRemove = this.tokens.findIndex((tokenId) => tokenId.equals(tokenIdToRemove))
+  this.tokens.splice(indexToRemove, 1)
+}
+
+userRefreshTokensSchema.methods.addToken = function addToken() {
+  const tokenId = new Types.ObjectId()
+  this.tokens.push(tokenId)
+  return tokenId
+}
+
+userRefreshTokensSchema.methods.ownsToken = function ownsToken(tokenId) {
+  return this.tokens.some((ownedTokenId) => ownedTokenId.equals(tokenId))
 }
 
 const RefreshTokens = model('RefreshTokens', userRefreshTokensSchema)

@@ -276,7 +276,7 @@ describe('User CRUD', () => {
 
       // check if all refresh tokens are revoked
       qwertyRefreshTokens = await RefreshTokens.findByUserId(qwerty._id)
-      qwertyRefreshTokens.tokens.should.have.length(0)
+      chai.should().not.exist(qwertyRefreshTokens)
     })
 
     it('Check if likes are removed on delete.', async () => {
