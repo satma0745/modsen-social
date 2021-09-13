@@ -5,3 +5,5 @@
 
 /environment/*
 !/environment/.env.sample
+
+/dist
