@@ -14,35 +14,33 @@ import {
 
 type GetUserProfile = (_userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
 const getUserProfile: GetUserProfile = async (userId) => {
-  if (!(await User.existsWithId(userId))) {
+  const user = await User.findById(userId)
+  if (user === null) {
     return notFound('User with provided id does not exist.')
   }
 
-  const user = await User.findOne({ _id: userId })
   return success(user.profile)
 }
 
 type GetFans = (_userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
 const getFans: GetFans = async (userId) => {
-  if (!(await User.existsWithId(userId))) {
+  const user = await User.findById(userId)
+  if (user === null) {
     return notFound('User with provided id does not exist.')
   }
 
-  const user = await User.findById(userId)
   const fans = await User.find({ _id: { $in: user.profile.likedBy } })
-
   return success(fans)
 }
 
 type GetFavorites = (_userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
 const getFavorites: GetFavorites = async (userId) => {
-  if (!(await User.existsWithId(userId))) {
+  const user = await User.findById(userId)
+  if (user === null) {
     return notFound('User with provided id does not exist.')
   }
 
-  const user = await User.findById(userId)
   const favorites = await User.find({ _id: { $in: user.profile.liked } })
-
   return success(favorites)
 }
 
@@ -54,7 +52,8 @@ type UpdateUserProfile = (_options: {
   contacts: { type: string; value: string }[]
 }) => Promise<INotFoundOperationResult | IAccessViolationOperationResult | ISuccessOperationResult>
 const updateUserProfile: UpdateUserProfile = async ({ requesterId, userId, headline, bio, contacts }) => {
-  if (!(await User.existsWithId(userId))) {
+  const user = await User.findById(userId)
+  if (user === null) {
     return notFound('User with provided id does not exist.')
   }
 
@@ -62,7 +61,6 @@ const updateUserProfile: UpdateUserProfile = async ({ requesterId, userId, headl
     return accessViolation()
   }
 
-  const user = await User.findById(userId)
   user.profile = { headline, bio, contacts }
   await user.save()
 
@@ -74,22 +72,25 @@ type LikeProfile = (_options: {
   profileOwnerId: string | Types.ObjectId
 }) => Promise<INotFoundOperationResult | IConflictOperationResult | ISuccessOperationResult>
 const likeProfile: LikeProfile = async ({ requesterId, profileOwnerId }) => {
-  if (!(await User.existsWithId(profileOwnerId))) {
+  const profileOwner = await User.findById(profileOwnerId)
+  if (profileOwner === null) {
     return notFound('User with provided id does not exist.')
   }
 
   const requester = await User.findById(requesterId)
-  const target = await User.findById(profileOwnerId)
+  if (requester === null) {
+    throw new Error('Requester does not exist.')
+  }
 
-  if (requester.profile.liked.includes(target._id)) {
+  if (requester.profile.liked!.includes(profileOwner._id)) {
     return conflict('User profile is already liked by the requester.')
   }
 
-  requester.profile.liked.push(target._id)
+  requester.profile.liked!.push(profileOwner._id)
   await requester.save()
 
-  target.profile.likedBy.push(requester._id)
-  await target.save()
+  profileOwner.profile.likedBy!.push(requester._id)
+  await profileOwner.save()
 
   return success()
 }
@@ -107,22 +108,25 @@ type UnlikeProfile = (_options: {
   profileOwnerId: string | Types.ObjectId
 }) => Promise<INotFoundOperationResult | IConflictOperationResult | ISuccessOperationResult>
 const unlikeProfile: UnlikeProfile = async ({ requesterId, profileOwnerId }) => {
-  if (!(await User.existsWithId(profileOwnerId))) {
+  const profileOwner = await User.findById(profileOwnerId)
+  if (profileOwner === null) {
     return notFound('User with provided id does not exist.')
   }
 
   const requester = await User.findById(requesterId)
-  const target = await User.findById(profileOwnerId)
+  if (requester === null) {
+    throw new Error('Requester does not exist.')
+  }
 
-  if (!requester.profile.liked.includes(target._id)) {
+  if (!requester.profile.liked!.includes(profileOwner._id)) {
     return conflict('User profile was not previously liked by the requester.')
   }
 
-  removeFromArray(requester.profile.liked, target._id)
+  removeFromArray(requester.profile.liked!, profileOwner._id)
   await requester.save()
 
-  removeFromArray(target.profile.likedBy, requester._id)
-  await target.save()
+  removeFromArray(profileOwner.profile.likedBy!, requester._id)
+  await profileOwner.save()
 
   return success()
 }

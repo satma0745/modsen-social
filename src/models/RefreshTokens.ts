@@ -56,6 +56,6 @@ userRefreshTokensSchema.methods.ownsToken = function ownsToken(tokenId) {
   return this.tokens.some((ownedTokenId) => ownedTokenId.equals(tokenId))
 }
 
-const RefreshTokens = model('RefreshTokens', userRefreshTokensSchema)
+const RefreshTokens = model<IUserRefreshTokenSchema, IUserRefreshTokenModel>('RefreshTokens', userRefreshTokensSchema)
 
 export { RefreshTokens, IUserRefreshTokenSchema as IRefreshTokens }

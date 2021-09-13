@@ -4,7 +4,8 @@ type ConfigureDb = () => Promise<Connection>
 
 const configureAsync: ConfigureDb = () => {
   return new Promise((resolve, reject) => {
-    mongoose.connect(process.env.DB_CONNECTION).catch(console.error)
+    const connectionString = process.env.DB_CONNECTION!
+    mongoose.connect(connectionString).catch(console.error)
     const { connection } = mongoose
 
     connection.on('error', reject)

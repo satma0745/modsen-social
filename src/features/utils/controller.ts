@@ -8,8 +8,8 @@ import { User } from '../../models'
 type JwtAuth = (_req: Request, _res: Response, _next: NextFunction) => Promise<void>
 const jwtAuth: JwtAuth = async (req, res, next) => {
   try {
-    const token = req.headers.authorization.replace('Bearer', '').trim()
-    const payload = verify(token, process.env.TOKEN_SECRET)
+    const token = req.headers.authorization!.replace('Bearer', '').trim()
+    const payload = verify(token, process.env.TOKEN_SECRET!)
 
     const userId = payload.sub as string
     if (!(await User.existsWithId(userId))) {
@@ -27,6 +27,9 @@ const jwtAuth: JwtAuth = async (req, res, next) => {
   }
 }
 
+interface ValidationErrors {
+  [_key: string]: string
+}
 type ValidationSchema = ValidationChain[] & {
   run: (_req: Request) => Promise<unknown[]>
 }
@@ -38,7 +41,7 @@ const validateWith: ValidateWith = (validationSchema) => async (req, res, next) 
     const validationErrors = validationResult(req)
 
     if (!validationErrors.isEmpty()) {
-      const response = {}
+      const response: ValidationErrors = {}
       validationErrors.array().forEach(({ msg, param }) => {
         if (!(param in response)) {
           response[param] = msg

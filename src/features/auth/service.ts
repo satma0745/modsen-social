@@ -16,7 +16,7 @@ import { generateTokenPair } from './tokens'
 type RefreshTokenPair = (_refreshToken: string) => Promise<IUnauthorizedOperationResult | ISuccessOperationResult>
 const refreshTokenPair: RefreshTokenPair = async (refreshToken) => {
   try {
-    const tokenSecret = process.env.TOKEN_SECRET
+    const tokenSecret = process.env.TOKEN_SECRET!
     const payload = verify(refreshToken, tokenSecret)
 
     if (!Array.isArray(payload.sub)) {

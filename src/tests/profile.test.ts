@@ -1,16 +1,18 @@
 import chai from 'chai'
 import chaiHttp from 'chai-http'
 import { sign } from 'jsonwebtoken'
+import { Express } from 'express'
+import { Connection } from 'mongoose'
 
 import serverPromise from '../server'
-import { User } from '../models'
+import { IUser, User } from '../models'
 
 chai.should()
 chai.use(chaiHttp)
 
 describe('User profile', () => {
-  let server
-  let dbConnection
+  let server: Express
+  let dbConnection: Connection
 
   before(async () => {
     const { app, db } = await serverPromise
@@ -71,14 +73,14 @@ describe('User profile', () => {
   })
 
   describe('PUT: /api/users/{userId}/profile - Update user profile.', () => {
-    let qwerty
-    let token
+    let qwerty: IUser
+    let token: string
 
     before(async () => {
       qwerty = new User({ username: 'qwerty', password: 'username' })
       await qwerty.save()
 
-      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET!)
     })
     after(() => {
       return dbConnection.db.dropCollection('users')
@@ -119,7 +121,7 @@ describe('User profile', () => {
         .send(profileData)
 
       // get updated document
-      qwerty = await User.findById(qwerty._id)
+      qwerty = (await User.findById(qwerty._id))!
 
       response.should.have.status(200)
 
@@ -132,9 +134,9 @@ describe('User profile', () => {
   })
 
   describe("POST: /api/users/{userId}/profile/like - Like user's profile.", () => {
-    let favorite
-    let fan
-    let fansToken
+    let favorite: IUser
+    let fan: IUser
+    let fansToken: string
 
     before(async () => {
       favorite = new User({ username: 'favorite', password: 'password' })
@@ -142,7 +144,7 @@ describe('User profile', () => {
 
       await Promise.all([favorite.save(), fan.save()])
 
-      fansToken = sign({ sub: fan._id.toString() }, process.env.TOKEN_SECRET)
+      fansToken = sign({ sub: fan._id.toString() }, process.env.TOKEN_SECRET!)
     })
     after(() => {
       return dbConnection.db.dropCollection('users')
@@ -175,31 +177,31 @@ describe('User profile', () => {
         .set('Authorization', `Bearer ${fansToken}`)
 
       // get updated documents
-      fan = await User.findById(fan._id)
-      favorite = await User.findById(favorite._id)
+      fan = (await User.findById(fan._id))!
+      favorite = (await User.findById(favorite._id))!
 
       response.should.have.status(200)
 
-      fan.profile.liked.map((id) => id.toString()).should.include(favorite._id.toString())
-      favorite.profile.likedBy.map((id) => id.toString()).should.include(fan._id.toString())
+      fan.profile.liked!.map((id) => id.toString()).should.include(favorite._id.toString())
+      favorite.profile.likedBy!.map((id) => id.toString()).should.include(fan._id.toString())
     })
   })
 
   describe("POST: /api/users/{userId}/profile/unlike - Unlike user's profile.", () => {
-    let favorite
-    let fan
-    let fansToken
+    let favorite: IUser
+    let fan: IUser
+    let fansToken: string
 
     before(async () => {
       favorite = new User({ username: 'favorite', password: 'password' })
       fan = new User({ username: 'test-fan', password: 'password' })
 
-      favorite.profile.likedBy.push(fan._id)
-      fan.profile.liked.push(favorite._id)
+      favorite.profile.likedBy!.push(fan._id)
+      fan.profile.liked!.push(favorite._id)
 
       await Promise.all([favorite.save(), fan.save()])
 
-      fansToken = sign({ sub: fan._id.toString() }, process.env.TOKEN_SECRET)
+      fansToken = sign({ sub: fan._id.toString() }, process.env.TOKEN_SECRET!)
     })
     after(() => {
       return dbConnection.db.dropCollection('users')
@@ -232,19 +234,19 @@ describe('User profile', () => {
         .set('Authorization', `Bearer ${fansToken}`)
 
       // get updated documents
-      fan = await User.findById(fan._id)
-      favorite = await User.findById(favorite._id)
+      fan = (await User.findById(fan._id))!
+      favorite = (await User.findById(favorite._id))!
 
       response.should.have.status(200)
 
-      favorite.profile.likedBy.map((id) => id.toString()).should.not.include(fan._id.toString())
-      fan.profile.liked.map((id) => id.toString()).should.not.include(favorite._id.toString())
+      favorite.profile.likedBy!.map((id) => id.toString()).should.not.include(fan._id.toString())
+      fan.profile.liked!.map((id) => id.toString()).should.not.include(favorite._id.toString())
     })
   })
 
   describe("GET: /api/users/{userId}/profile/fans - Get user profile's fans.", () => {
-    let favorite
-    let fans
+    let favorite: IUser
+    let fans: IUser[]
 
     before(() => {
       favorite = new User({ username: 'favorite', password: 'password' })
@@ -255,8 +257,8 @@ describe('User profile', () => {
       ]
 
       fans.forEach((fan) => {
-        favorite.profile.likedBy.push(fan._id)
-        fan.profile.liked.push(favorite._id)
+        favorite.profile.likedBy!.push(fan._id)
+        fan.profile.liked!.push(favorite._id)
       })
 
       return Promise.all([
@@ -292,15 +294,15 @@ describe('User profile', () => {
         fans.map(({ _id, username, profile: { likedBy } }) => ({
           id: _id.toString(),
           username,
-          likes: likedBy.length,
+          likes: likedBy!.length,
         }))
       )
     })
   })
 
   describe("GET: /api/users/{userId}/profile/favorites - Get user's favorites.", () => {
-    let fan
-    let favorites
+    let fan: IUser
+    let favorites: IUser[]
 
     before(() => {
       fan = new User({ username: 'test-fan', password: 'password' })
@@ -311,8 +313,8 @@ describe('User profile', () => {
       ]
 
       favorites.forEach((favorite) => {
-        favorite.profile.likedBy.push(fan._id)
-        fan.profile.liked.push(favorite._id)
+        favorite.profile.likedBy!.push(fan._id)
+        fan.profile.liked!.push(favorite._id)
       })
 
       return Promise.all([
@@ -348,7 +350,7 @@ describe('User profile', () => {
         favorites.map(({ _id, username, profile: { likedBy } }) => ({
           id: _id.toString(),
           username,
-          likes: likedBy.length,
+          likes: likedBy!.length,
         }))
       )
     })

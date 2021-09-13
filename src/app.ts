@@ -1,4 +1,4 @@
-import express, { Express, Request } from 'express'
+import express, { Express, NextFunction, Request, Response } from 'express'
 import responseTime from 'response-time'
 import swaggerUi, { JsonObject } from 'swagger-ui-express'
 
@@ -36,7 +36,7 @@ const configureApp: ConfigureApp = ({ swaggerSpec }) => {
   app.use('/api/users', features.users)
 
   // register error handlers
-  app.use((_err, _req, res, _next) => {
+  app.use((_err: Error, _req: Request, res: Response, _next: NextFunction) => {
     res.sendStatus(500)
   })
 

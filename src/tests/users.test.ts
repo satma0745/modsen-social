@@ -1,17 +1,18 @@
 import chai from 'chai'
 import chaiHttp from 'chai-http'
 import { sign } from 'jsonwebtoken'
-import { Types } from 'mongoose'
+import { Connection, Types } from 'mongoose'
 
-import { User, RefreshTokens } from '../models'
+import { Express } from 'express'
+import { User, RefreshTokens, IUser } from '../models'
 import serverPromise from '../server'
 
 chai.should()
 chai.use(chaiHttp)
 
 describe('User CRUD', () => {
-  let server
-  let dbConnection
+  let server: Express
+  let dbConnection: Connection
 
   before(async () => {
     const { app, db } = await serverPromise
@@ -69,7 +70,7 @@ describe('User CRUD', () => {
       response.body.should.be.a('string')
 
       const userId = response.body
-      const qwerty = await User.findById(userId)
+      const qwerty = (await User.findById(userId))!
       qwerty.username.should.be.eq(userData.username)
       qwerty.password.should.be.eq(userData.password)
     })
@@ -131,14 +132,14 @@ describe('User CRUD', () => {
   })
 
   describe('PUT: /api/users/{id} - Update specific user.', () => {
-    let qwerty
-    let token
+    let qwerty: IUser
+    let token: string
 
     before(async () => {
       qwerty = new User({ username: 'qwerty', password: 'password' })
       await qwerty.save()
 
-      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET!)
     })
     after(() => {
       return dbConnection.db.dropCollection('users')
@@ -185,7 +186,7 @@ describe('User CRUD', () => {
       const duplicate = new User({ username: 'qwerty-duplicate', password: 'password' })
       await duplicate.save()
 
-      const duplicatesToken = sign({ sub: duplicate._id.toString() }, process.env.TOKEN_SECRET)
+      const duplicatesToken = sign({ sub: duplicate._id.toString() }, process.env.TOKEN_SECRET!)
       const response = await chai
         .request(server)
         .put(`/api/users/${duplicate._id.toString()}`)
@@ -213,7 +214,7 @@ describe('User CRUD', () => {
       response.should.have.status(200)
 
       // check if changes were saved to the database
-      const updatedQwerty = await User.findById(qwerty._id)
+      const updatedQwerty = (await User.findById(qwerty._id))!
       updatedQwerty.should.have.property('username').eq(updatedUserData.username)
       updatedQwerty.should.have.property('password').eq(updatedUserData.password)
 
@@ -224,14 +225,14 @@ describe('User CRUD', () => {
   })
 
   describe('DELETE: /api/users/{id} - Delete specific user.', () => {
-    let qwerty
-    let token
+    let qwerty: IUser
+    let token: string
 
     before(async () => {
       qwerty = new User({ username: 'qwerty', password: 'password' })
       await qwerty.save()
 
-      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+      token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET!)
     })
     after(() => {
       return dbConnection.db.dropCollection('users')
@@ -284,12 +285,12 @@ describe('User CRUD', () => {
       const willBeDeleted = new User({ username: 'will-be-deleted', password: 'password' })
       let fan = new User({ username: 'test-fan', password: 'password' })
 
-      favorite.profile.likedBy.push(willBeDeleted._id)
-      fan.profile.liked.push(willBeDeleted._id)
+      favorite.profile.likedBy!.push(willBeDeleted._id)
+      fan.profile.liked!.push(willBeDeleted._id)
 
       await Promise.all([favorite.save(), willBeDeleted.save(), fan.save()])
 
-      const tokenForWillBeDeleted = sign({ sub: willBeDeleted._id.toString() }, process.env.TOKEN_SECRET)
+      const tokenForWillBeDeleted = sign({ sub: willBeDeleted._id.toString() }, process.env.TOKEN_SECRET!)
       const response = await chai
         .request(server)
         .delete(`/api/users/${willBeDeleted._id.toString()}`)
@@ -298,11 +299,11 @@ describe('User CRUD', () => {
       response.should.have.status(200)
 
       // get updated documents
-      favorite = await User.findById(favorite._id)
-      fan = await User.findById(fan._id)
+      favorite = (await User.findById(favorite._id))!
+      fan = (await User.findById(fan._id))!
 
-      favorite.profile.likedBy.map((id) => id.toString()).should.not.include(willBeDeleted._id.toString())
-      fan.profile.likedBy.map((id) => id.toString()).should.not.include(fan._id.toString())
+      favorite.profile.likedBy!.map((id) => id.toString()).should.not.include(willBeDeleted._id.toString())
+      fan.profile.likedBy!.map((id) => id.toString()).should.not.include(fan._id.toString())
     })
   })
 })

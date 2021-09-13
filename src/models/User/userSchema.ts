@@ -54,4 +54,4 @@ userSchema.statics.findByUsername = function findByUsername(username) {
   return this.findOne({ username })
 }
 
-export { userSchema, IUserSchema }
+export { userSchema, IUserSchema, IUserModel }

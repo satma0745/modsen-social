@@ -3,7 +3,7 @@ import { IUser } from '../../models'
 interface IUserDto {
   id: string
   username: string
-  headline: string
+  headline?: string
   likes: number
 }
 
@@ -12,7 +12,7 @@ const toUserDto: ToUserDto = (userModel) => ({
   id: userModel._id.toString(),
   username: userModel.username,
   headline: userModel.profile.headline,
-  likes: userModel.profile.likedBy.length,
+  likes: userModel.profile.likedBy!.length,
 })
 
 type ToUserDtos = (_users: IUser[]) => IUserDto[]

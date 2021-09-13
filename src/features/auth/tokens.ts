@@ -14,7 +14,7 @@ type TokenPair = {
 type GenerateTokenPair = (_options: Options) => TokenPair
 
 const generateTokenPair: GenerateTokenPair = (options) => {
-  const tokenSecret = process.env.TOKEN_SECRET
+  const tokenSecret = process.env.TOKEN_SECRET!
   const accessTokenLifetime = process.env.ACCESS_TOKEN_LIFETIME
   const refreshTokenLifetime = process.env.REFRESH_TOKEN_LIFETIME
 

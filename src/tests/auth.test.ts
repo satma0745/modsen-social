@@ -1,17 +1,18 @@
 import chai from 'chai'
 import chaiHttp from 'chai-http'
-import { Types } from 'mongoose'
+import { Connection, Types } from 'mongoose'
+import { Express } from 'express'
 import { sign, verify } from 'jsonwebtoken'
 
-import { User, RefreshTokens } from '../models'
+import { User, RefreshTokens, IUser } from '../models'
 import serverPromise from '../server'
 
 chai.should()
 chai.use(chaiHttp)
 
 describe('Authentication & Authorization', () => {
-  let server
-  let dbConnection
+  let server: Express
+  let dbConnection: Connection
 
   before(async () => {
     const { app, db } = await serverPromise
@@ -26,7 +27,7 @@ describe('Authentication & Authorization', () => {
   })
 
   describe('POST: /api/auth/token - Generate token pair for specified user credentials.', () => {
-    let qwerty
+    let qwerty: IUser
 
     before(() => {
       qwerty = new User({ username: 'qwerty', password: 'password' })
@@ -71,8 +72,8 @@ describe('Authentication & Authorization', () => {
       response.body.should.have.property('refresh').that.is.a('string')
 
       const { access: accessToken, refresh: refreshToken } = response.body
-      const accessTokenPayload = verify(accessToken, process.env.TOKEN_SECRET)
-      const refreshTokenPayload = verify(refreshToken, process.env.TOKEN_SECRET)
+      const accessTokenPayload = verify(accessToken, process.env.TOKEN_SECRET!)
+      const refreshTokenPayload = verify(refreshToken, process.env.TOKEN_SECRET!)
 
       // access token should contain user id
       accessTokenPayload.should.be.a('object')
@@ -81,20 +82,21 @@ describe('Authentication & Authorization', () => {
       // refresh token should contain user id & token id
       refreshTokenPayload.should.be.an('object')
       refreshTokenPayload.should.have.property('sub').that.is.an('array')
-      refreshTokenPayload.sub.should.have.length(2)
-      refreshTokenPayload.sub[0].should.be.eq(qwerty._id.toString())
-      refreshTokenPayload.sub[1].should.be.a('string')
+      refreshTokenPayload.sub!.should.have.length(2)
+      const [payloadUserId, payloadTokenId] = refreshTokenPayload.sub as any as [string, string]
+      payloadUserId.should.be.eq(qwerty._id.toString())
+      payloadTokenId.should.be.a('string')
 
       // id of the issued refresh token should be saved to the database
       const userRefreshTokens = await RefreshTokens.findByUserId(qwerty._id)
       const issuedRefreshTokens = userRefreshTokens.tokens
       issuedRefreshTokens.should.have.length(1)
-      issuedRefreshTokens.map((tokenId) => tokenId.toString()).should.include(refreshTokenPayload.sub[1])
+      issuedRefreshTokens.map((tokenId) => tokenId.toString()).should.include(payloadTokenId)
     })
   })
 
   describe('POST: /api/auth/refresh - Refresh token pair.', () => {
-    let qwerty
+    let qwerty: IUser
 
     before(() => {
       qwerty = new User({ username: 'qwerty', password: 'password' })
@@ -113,7 +115,7 @@ describe('Authentication & Authorization', () => {
     })
 
     it('Try refresh using malformed token.', async () => {
-      const refreshToken = sign({ malformed: true }, process.env.TOKEN_SECRET)
+      const refreshToken = sign({ malformed: true }, process.env.TOKEN_SECRET!)
       const response = await chai.request(server).post('/api/auth/refresh').send({ refresh: refreshToken })
 
       response.should.have.status(401)
@@ -124,7 +126,7 @@ describe('Authentication & Authorization', () => {
     it('Try refresh using token with non-existing owner.', async () => {
       const userId = '000000000000000000000000'
       const tokenId = '000000000000000000000000'
-      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET)
+      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET!)
 
       const response = await chai.request(server).post('/api/auth/refresh').send({ refresh: refreshToken })
 
@@ -136,7 +138,7 @@ describe('Authentication & Authorization', () => {
     it('Try refresh using revoked token.', async () => {
       const userId = qwerty._id.toString()
       const tokenId = '000000000000000000000000'
-      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET)
+      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET!)
 
       const response = await chai.request(server).post('/api/auth/refresh').send({ refresh: refreshToken })
 
@@ -148,7 +150,7 @@ describe('Authentication & Authorization', () => {
     it('Try refresh using expired token.', async () => {
       const userId = qwerty._id.toString()
       const tokenId = '000000000000000000000000'
-      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET, { expiresIn: '-1s' })
+      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET!, { expiresIn: '-1s' })
 
       const response = await chai.request(server).post('/api/auth/refresh').send({ refresh: refreshToken })
 
@@ -168,7 +170,7 @@ describe('Authentication & Authorization', () => {
       // create refresh token
       const userId = qwerty._id.toString()
       const tokenId = refreshTokenId.toString()
-      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET)
+      const refreshToken = sign({ sub: [userId, tokenId] }, process.env.TOKEN_SECRET!)
 
       const response = await chai.request(server).post('/api/auth/refresh').send({ refresh: refreshToken })
 
@@ -179,22 +181,23 @@ describe('Authentication & Authorization', () => {
 
       // new access token should contain user id
       const newAccessToken = response.body.access
-      const accessTokenPayload = verify(newAccessToken, process.env.TOKEN_SECRET)
+      const accessTokenPayload = verify(newAccessToken, process.env.TOKEN_SECRET!)
       accessTokenPayload.should.have.property('sub').eq(userId)
 
       // new refresh token should contain both user id & token id
       const newRefreshToken = response.body.refresh
-      const refreshTokenPayload = verify(newRefreshToken, process.env.TOKEN_SECRET)
+      const refreshTokenPayload = verify(newRefreshToken, process.env.TOKEN_SECRET!)
       refreshTokenPayload.should.have.property('sub').that.is.an('array')
-      refreshTokenPayload.sub.should.have.length(2)
-      refreshTokenPayload.sub[0].should.be.eq(userId)
-      refreshTokenPayload.sub[1].should.be.a('string')
+      refreshTokenPayload.sub!.should.have.length(2)
+      const [payloadUserId, payloadTokenId] = refreshTokenPayload.sub as any as [string, string]
+      payloadUserId.should.be.eq(userId)
+      payloadTokenId.should.be.a('string')
 
       // id of the issued refresh token should be saved to the database
       qwertyRefreshTokens = await RefreshTokens.findByUserId(qwerty._id)
       const issuedRefreshTokens = qwertyRefreshTokens.tokens
       issuedRefreshTokens.should.have.length(1)
-      issuedRefreshTokens.map((id) => id.toString()).should.include(refreshTokenPayload.sub[1])
+      issuedRefreshTokens.map((id) => id.toString()).should.include(payloadTokenId)
     })
   })
 
@@ -214,7 +217,7 @@ describe('Authentication & Authorization', () => {
     })
 
     it('Invalid authorization token - token owner does not exist.', async () => {
-      const token = sign({ sub: '000000000000000000000000' }, process.env.TOKEN_SECRET)
+      const token = sign({ sub: '000000000000000000000000' }, process.env.TOKEN_SECRET!)
       const response = await chai.request(server).get('/api/auth/me').set('Authorization', `Bearer ${token}`)
 
       response.should.have.status(401)
@@ -224,7 +227,7 @@ describe('Authentication & Authorization', () => {
       const qwerty = new User({ username: 'qwerty', password: 'password' })
       await qwerty.save()
 
-      const token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET)
+      const token = sign({ sub: qwerty._id.toString() }, process.env.TOKEN_SECRET!)
       const response = await chai.request(server).get('/api/auth/me').set('Authorization', `Bearer ${token}`)
 
       response.should.have.status(200)

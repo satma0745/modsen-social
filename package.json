@@ -4,7 +4,7 @@
     "start": "yarn build && cross-env MODSEN_SOCIAL_ENV=development node dist/src/index.js",
     "test": "yarn build && cross-env MODSEN_SOCIAL_ENV=testing mocha 'dist/src/tests/**/*.test.js'"
   },
-  "version": "0.2.1",
+  "version": "0.2.2",
   "dependencies": {
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
