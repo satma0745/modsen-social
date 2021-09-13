@@ -1,7 +1,7 @@
 import swaggerJSDoc from 'swagger-jsdoc'
 import { version } from '../../package.json'
 
-const createSpec = () => {
+const createSpec = (): object => {
   const swaggerDefinition = {
     openapi: '3.0.0',
     info: {

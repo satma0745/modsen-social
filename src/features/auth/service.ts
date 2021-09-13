@@ -13,7 +13,7 @@ import {
 
 import { generateTokenPair } from './tokens'
 
-type RefreshTokenPair = (refreshToken: string) => Promise<IUnauthorizedOperationResult | ISuccessOperationResult>
+type RefreshTokenPair = (_refreshToken: string) => Promise<IUnauthorizedOperationResult | ISuccessOperationResult>
 const refreshTokenPair: RefreshTokenPair = async (refreshToken) => {
   try {
     const tokenSecret = process.env.TOKEN_SECRET
@@ -44,7 +44,7 @@ interface ICredentials {
   username: string
   password: string
 }
-type IssueTokenPair = (credentials: ICredentials) => Promise<IValidationErrorOperationResult | ISuccessOperationResult>
+type IssueTokenPair = (_credentials: ICredentials) => Promise<IValidationErrorOperationResult | ISuccessOperationResult>
 const issueTokenPair: IssueTokenPair = async ({ username, password }) => {
   const user = await User.findByUsername(username)
   if (user === null) {
@@ -62,7 +62,7 @@ const issueTokenPair: IssueTokenPair = async ({ username, password }) => {
   return success(tokens)
 }
 
-type GetUserInfo = (userId: Types.ObjectId) => Promise<ISuccessOperationResult>
+type GetUserInfo = (_userId: Types.ObjectId) => Promise<ISuccessOperationResult>
 const getUserInfo: GetUserInfo = async (userId) => {
   const user = await User.findById(userId)
   return success(user)

@@ -11,7 +11,7 @@ type TokenPair = {
   refresh: string
 }
 
-type GenerateTokenPair = (options: Options) => TokenPair
+type GenerateTokenPair = (_options: Options) => TokenPair
 
 const generateTokenPair: GenerateTokenPair = (options) => {
   const tokenSecret = process.env.TOKEN_SECRET

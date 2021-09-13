@@ -8,9 +8,9 @@ interface IUserSchema extends Document {
 }
 
 interface IUserModel extends Model<IUserSchema> {
-  existsWithId(id: string | Types.ObjectId): Promise<boolean>
-  existsWithUsername(username: string, exceptionId?: string | Types.ObjectId): Promise<boolean>
-  findByUsername(username: string): Promise<IUserSchema>
+  existsWithId(_id: string | Types.ObjectId): Promise<boolean>
+  existsWithUsername(_username: string, _exceptionId?: string | Types.ObjectId): Promise<boolean>
+  findByUsername(_username: string): Promise<IUserSchema>
 }
 
 const userSchema = new Schema<IUserSchema, IUserModel>({

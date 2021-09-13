@@ -6,7 +6,7 @@ interface IProfileDto {
   likes: number
   contacts: { type: string; value: string }[]
 }
-type ToProfileDto = (profile: IProfile) => IProfileDto
+type ToProfileDto = (_profile: IProfile) => IProfileDto
 const toProfileDto: ToProfileDto = (profileModel) => ({
   headline: profileModel.headline,
   bio: profileModel.bio,
@@ -20,7 +20,7 @@ interface IUserDto {
   headline: string
   likes: number
 }
-type ToUserDto = (user: IUser) => IUserDto
+type ToUserDto = (_user: IUser) => IUserDto
 const toUserDto: ToUserDto = (userModel) => ({
   id: userModel._id.toString(),
   username: userModel.username,
@@ -28,7 +28,7 @@ const toUserDto: ToUserDto = (userModel) => ({
   likes: userModel.profile.likedBy.length,
 })
 
-type ToUserDtos = (users: IUser[]) => IUserDto[]
+type ToUserDtos = (_users: IUser[]) => IUserDto[]
 const toUserDtos: ToUserDtos = (users) => {
   return users.map(toUserDto)
 }

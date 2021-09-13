@@ -7,7 +7,7 @@ interface IUserDto {
   likes: number
 }
 
-type ToUserDto = (userDocument: IUser) => IUserDto
+type ToUserDto = (_userDocument: IUser) => IUserDto
 
 const toUserDto: ToUserDto = (userDocument) => {
   return {

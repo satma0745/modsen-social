@@ -18,7 +18,7 @@ const getAllUsers: GetAllUsers = async () => {
   return success(users)
 }
 
-type GetSingleUser = (userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
+type GetSingleUser = (_userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
 const getSingleUser: GetSingleUser = async (userId) => {
   if (!(await User.existsWithId(userId))) {
     return notFound('User with provided id does not exist.')
@@ -28,7 +28,7 @@ const getSingleUser: GetSingleUser = async (userId) => {
   return success(user)
 }
 
-type RegisterNewUser = (credentials: {
+type RegisterNewUser = (_credentials: {
   username: string
   password: string
 }) => Promise<IValidationErrorOperationResult | ISuccessOperationResult>
@@ -44,7 +44,7 @@ const registerNewUser: RegisterNewUser = async ({ username, password }) => {
   return success(userId)
 }
 
-type UpdateUser = (options: {
+type UpdateUser = (_options: {
   requesterId: Types.ObjectId
   userId: Types.ObjectId
   username: string
@@ -80,7 +80,7 @@ const updateUser: UpdateUser = async ({ requesterId, userId, username, password 
   return success()
 }
 
-type DeleteUser = (options: {
+type DeleteUser = (_options: {
   requesterId: Types.ObjectId
   userId: Types.ObjectId
 }) => Promise<INotFoundOperationResult | IAccessViolationOperationResult | ISuccessOperationResult>

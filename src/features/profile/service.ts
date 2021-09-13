@@ -12,7 +12,7 @@ import {
   IConflictOperationResult,
 } from '../utils/service'
 
-type GetUserProfile = (userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
+type GetUserProfile = (_userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
 const getUserProfile: GetUserProfile = async (userId) => {
   if (!(await User.existsWithId(userId))) {
     return notFound('User with provided id does not exist.')
@@ -22,7 +22,7 @@ const getUserProfile: GetUserProfile = async (userId) => {
   return success(user.profile)
 }
 
-type GetFans = (userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
+type GetFans = (_userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
 const getFans: GetFans = async (userId) => {
   if (!(await User.existsWithId(userId))) {
     return notFound('User with provided id does not exist.')
@@ -34,7 +34,7 @@ const getFans: GetFans = async (userId) => {
   return success(fans)
 }
 
-type GetFavorites = (userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
+type GetFavorites = (_userId: Types.ObjectId) => Promise<INotFoundOperationResult | ISuccessOperationResult>
 const getFavorites: GetFavorites = async (userId) => {
   if (!(await User.existsWithId(userId))) {
     return notFound('User with provided id does not exist.')
@@ -46,7 +46,7 @@ const getFavorites: GetFavorites = async (userId) => {
   return success(favorites)
 }
 
-type UpdateUserProfile = (options: {
+type UpdateUserProfile = (_options: {
   requesterId: Types.ObjectId
   userId: Types.ObjectId
   headline: string
@@ -69,7 +69,7 @@ const updateUserProfile: UpdateUserProfile = async ({ requesterId, userId, headl
   return success()
 }
 
-type LikeProfile = (options: {
+type LikeProfile = (_options: {
   requesterId: Types.ObjectId
   profileOwnerId: string | Types.ObjectId
 }) => Promise<INotFoundOperationResult | IConflictOperationResult | ISuccessOperationResult>
@@ -94,7 +94,7 @@ const likeProfile: LikeProfile = async ({ requesterId, profileOwnerId }) => {
   return success()
 }
 
-type RemoveFromArray<T> = (array: T[], element: T) => void
+type RemoveFromArray<T> = (_array: T[], _element: T) => void
 const removeFromArray: RemoveFromArray<any> = (array, element) => {
   const indexToRemove = array.indexOf(element)
   if (indexToRemove >= 0) {
@@ -102,7 +102,7 @@ const removeFromArray: RemoveFromArray<any> = (array, element) => {
   }
 }
 
-type UnlikeProfile = (options: {
+type UnlikeProfile = (_options: {
   requesterId: Types.ObjectId
   profileOwnerId: string | Types.ObjectId
 }) => Promise<INotFoundOperationResult | IConflictOperationResult | ISuccessOperationResult>

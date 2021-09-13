@@ -1,7 +1,7 @@
 import { isValidObjectId, Types } from 'mongoose'
 
-type ObjectIdValidator = (value: any) => true | never
-type ValidObjectId = (errorMessage: string) => ObjectIdValidator
+type ObjectIdValidator = (_value: any) => true | never
+type ValidObjectId = (_errorMessage: string) => ObjectIdValidator
 
 const validObjectId: ValidObjectId = (errorMessage) => {
   return (value) => {
@@ -13,14 +13,14 @@ const validObjectId: ValidObjectId = (errorMessage) => {
   }
 }
 
-type ObjectIdSanitizer = (value: any) => Types.ObjectId | null
+type ObjectIdSanitizer = (_value: any) => Types.ObjectId | null
 
 const toObjectId: ObjectIdSanitizer = (value) => {
   return isValidObjectId(value) ? new Types.ObjectId(value) : null
 }
 
-type OfTypeValidator = (value: any) => true | never
-type OfType = (allowedTypes: string[], errorMessage: string) => OfTypeValidator
+type OfTypeValidator = (_value: any) => true | never
+type OfType = (_allowedTypes: string[], _errorMessage: string) => OfTypeValidator
 
 const ofType: OfType = (allowedTypes, errorMessage) => {
   return (value) => {

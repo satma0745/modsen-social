@@ -2,7 +2,7 @@ interface ISuccessOperationResult {
   success: true
   payload?: any
 }
-type Success = (value?: any) => ISuccessOperationResult
+type Success = (_value?: any) => ISuccessOperationResult
 
 const success: Success = (value) => ({
   success: true,
@@ -13,7 +13,7 @@ interface IConflictOperationResult {
   success: false
   conflict: string
 }
-type Conflict = (message: string) => IConflictOperationResult
+type Conflict = (_message: string) => IConflictOperationResult
 
 const conflict: Conflict = (message) => ({
   success: false,
@@ -24,7 +24,7 @@ interface IValidationErrorOperationResult {
   success: false
   validationErrors: object
 }
-type ValidationError = (errors: object) => IValidationErrorOperationResult
+type ValidationError = (_errors: object) => IValidationErrorOperationResult
 
 const validationError: ValidationError = (errors) => ({
   success: false,
@@ -39,7 +39,7 @@ interface IUnauthorizedOperationResult {
   success: false
   unauthorized: IUnauthorizedOperationResultDetails
 }
-type Unauthorized = (details: IUnauthorizedOperationResultDetails) => IUnauthorizedOperationResult
+type Unauthorized = (_details: IUnauthorizedOperationResultDetails) => IUnauthorizedOperationResult
 
 const unauthorized: Unauthorized = ({ access, refresh }) => ({
   success: false,
@@ -61,7 +61,7 @@ interface INotFoundOperationResult {
   success: false
   notFound: string
 }
-type NotFound = (message: string) => INotFoundOperationResult
+type NotFound = (_message: string) => INotFoundOperationResult
 
 const notFound: NotFound = (message) => ({
   success: false,

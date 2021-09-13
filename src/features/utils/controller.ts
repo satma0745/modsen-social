@@ -1,9 +1,12 @@
+import { NextFunction, Request, Response } from 'express'
 import { validationResult } from 'express-validator'
+import { ValidationChain } from 'express-validator/src/chain'
 import { verify } from 'jsonwebtoken'
 
 import { User } from '../../models'
 
-const jwtAuth = async (req, res, next) => {
+type JwtAuth = (_req: Request, _res: Response, _next: NextFunction) => Promise<void>
+const jwtAuth: JwtAuth = async (req, res, next) => {
   try {
     const token = req.headers.authorization.replace('Bearer', '').trim()
     const payload = verify(token, process.env.TOKEN_SECRET)
@@ -14,7 +17,7 @@ const jwtAuth = async (req, res, next) => {
       return
     }
 
-    req.user = {
+    ;(req as any).user = {
       id: payload.sub,
     }
 
@@ -24,7 +27,12 @@ const jwtAuth = async (req, res, next) => {
   }
 }
 
-const validateWith = (validationSchema) => async (req, res, next) => {
+type ValidationSchema = ValidationChain[] & {
+  run: (_req: Request) => Promise<unknown[]>
+}
+type SchemaValidator = (_req: Request, _res: Response, _next: NextFunction) => Promise<void>
+type ValidateWith = (_schema: ValidationSchema) => SchemaValidator
+const validateWith: ValidateWith = (validationSchema) => async (req, res, next) => {
   try {
     await validationSchema.run(req)
     const validationErrors = validationResult(req)

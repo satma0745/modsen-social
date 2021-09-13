@@ -1,13 +1,18 @@
 import express, { Express, Request } from 'express'
 import responseTime from 'response-time'
-import swaggerUi from 'swagger-ui-express'
+import swaggerUi, { JsonObject } from 'swagger-ui-express'
 
 import * as features from './features'
 
 type Port = number | string
-type LaunchApp = (port: Port) => Promise<Express>
+type LaunchApp = (_port: Port) => Promise<Express>
 
-const configureApp = ({ swaggerSpec }) => {
+interface AppConfig {
+  swaggerSpec: JsonObject
+}
+type ConfigureApp = (_config: AppConfig) => LaunchApp
+
+const configureApp: ConfigureApp = ({ swaggerSpec }) => {
   const app = express()
 
   // register common middlewares

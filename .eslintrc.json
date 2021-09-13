@@ -6,20 +6,45 @@
     "mocha": true
   },
   "extends": [
+    "plugin:@typescript-eslint/recommended",
     "airbnb-base",
     "prettier"
   ],
   "plugins": [
     "prettier"
   ],
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion": 2020
+    "ecmaVersion": 2020,
+    "sourceType": "module"
   },
   "rules": {
     "prettier/prettier": "error",
     "no-console": "off",
     "no-unused-vars": ["error", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
+    "import/no-extraneous-dependencies": ["error", {"devDependencies": true}],
+    "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/ban-types": "off",
     "no-underscore-dangle": "off",
-    "arrow-body-style": "off"
+    "arrow-body-style": "off",
+    "import/prefer-default-export": "off",
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "mjs": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ]
+  },
+  "settings": {
+  "import/resolver": {
+    "node": {
+      "extensions": [".js", ".ts"]
+    }
   }
+}
 }

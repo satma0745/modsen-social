@@ -3,15 +3,15 @@ import { model, Schema, Types, SchemaTypes, Model, Document } from 'mongoose'
 interface IUserRefreshTokenSchema extends Document {
   tokens: Types.ObjectId[]
   revokeTokens(): void
-  revokeToken(tokenId: Types.ObjectId): void
+  revokeToken(_tokenId: Types.ObjectId): void
   addToken(): Types.ObjectId
-  ownsToken(tokenId: Types.ObjectId): boolean
+  ownsToken(_tokenId: Types.ObjectId): boolean
 }
 
 interface IUserRefreshTokenModel extends Model<IUserRefreshTokenSchema> {
-  findByUserId(userId: Types.ObjectId): Promise<IUserRefreshTokenSchema>
-  findByUserIdOrCreate(userId: Types.ObjectId): Promise<IUserRefreshTokenSchema>
-  findByUserIdAndDelete(userId: Types.ObjectId): Promise<void>
+  findByUserId(_userId: Types.ObjectId): Promise<IUserRefreshTokenSchema>
+  findByUserIdOrCreate(_userId: Types.ObjectId): Promise<IUserRefreshTokenSchema>
+  findByUserIdAndDelete(_userId: Types.ObjectId): Promise<void>
 }
 
 const userRefreshTokensSchema = new Schema<IUserRefreshTokenSchema, IUserRefreshTokenModel>({
